@@ -22,6 +22,19 @@ from dataclasses import dataclass, field
 
 
 # ---------------------------------------------------------------------------
+# Device management — auto-detect GPU
+# ---------------------------------------------------------------------------
+
+def get_device():
+    """Get the best available device (CUDA GPU > CPU)."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+DEVICE = get_device()
+
+
+# ---------------------------------------------------------------------------
 # State encoding (64 features)
 # ---------------------------------------------------------------------------
 
@@ -130,7 +143,7 @@ def encode_game_state(player, opponent, battlefields, turn=0) -> torch.Tensor:
     while len(f) < STATE_DIM:
         f.append(0.0)
 
-    return torch.tensor(f[:STATE_DIM], dtype=torch.float32)
+    return torch.tensor(f[:STATE_DIM], dtype=torch.float32, device=DEVICE)
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +162,7 @@ def encode_card(card) -> torch.Tensor:
         1.0 if card.card_type == "Unit" else 0.0,
         1.0 if card.card_type == "Spell" else 0.0,
         1.0 if card.champion else 0.0,
-    ], dtype=torch.float32)
+    ], dtype=torch.float32, device=DEVICE)
 
 
 # ---------------------------------------------------------------------------
@@ -166,8 +179,9 @@ class RiftboundNet(nn.Module):
     - value_head:  state → predicted win probability
     """
 
-    def __init__(self, hidden=256):
+    def __init__(self, hidden=256, device=None):
         super().__init__()
+        self._device = device or DEVICE
 
         # Shared backbone
         self.backbone = nn.Sequential(
@@ -207,13 +221,16 @@ class RiftboundNet(nn.Module):
             nn.Tanh(),   # output in [-1, 1]: -1=loss, +1=win
         )
 
+        # Move entire network to device
+        self.to(self._device)
+
     def forward_backbone(self, state: torch.Tensor) -> torch.Tensor:
-        return self.backbone(state)
+        return self.backbone(state.to(self._device))
 
     def score_cards(self, state: torch.Tensor, cards: list) -> torch.Tensor:
         """Score each card in hand. Returns (N,) tensor."""
         if not cards:
-            return torch.tensor([])
+            return torch.tensor([], device=self._device)
         features = self.forward_backbone(state)
         scores = []
         for card in cards:

@@ -38,6 +38,8 @@ def ppo_update(net, optimizer, trajectories, epochs=4, clip_eps=0.2,
     Collects all steps from all trajectories, computes advantages,
     then runs multiple epochs of minibatch updates.
     """
+    from ai.rl_core import DEVICE
+
     all_states = []
     all_log_probs_old = []
     all_advantages = []
@@ -58,10 +60,10 @@ def ppo_update(net, optimizer, trajectories, epochs=4, clip_eps=0.2,
     if not all_states:
         return 0.0
 
-    states = torch.stack(all_states)
-    log_probs_old = torch.stack(all_log_probs_old)
-    advantages = torch.stack(all_advantages)
-    returns = torch.stack(all_returns)
+    states = torch.stack(all_states).to(DEVICE)
+    log_probs_old = torch.stack(all_log_probs_old).to(DEVICE)
+    advantages = torch.stack(all_advantages).to(DEVICE)
+    returns = torch.stack(all_returns).to(DEVICE)
 
     # Normalize advantages
     if advantages.std() > 1e-8:
@@ -240,7 +242,9 @@ class SelfPlayTrainer:
     """
 
     def __init__(self, card_pool, hidden=256, lr=3e-4):
+        from ai.rl_core import DEVICE
         self.card_pool = card_pool
+        self.device = DEVICE
         self.net = RiftboundNet(hidden=hidden)
         self.optimizer = optim.Adam(self.net.parameters(), lr=lr)
         self.best_winrate = 0.0
@@ -254,6 +258,7 @@ class SelfPlayTrainer:
         anneals to 0.3 (mostly exploitation) over training.
         """
         print(f"\n  Self-Play PPO Training")
+        print(f"  Device: {self.device} {'(GPU)' if self.device.type == 'cuda' else '(CPU)'}")
         print(f"  Generations: {generations} | Games/gen: {games_per_gen}")
         print(f"  Network params: {sum(p.numel() for p in self.net.parameters()):,}")
 
@@ -313,8 +318,9 @@ class SelfPlayTrainer:
         print(f"  RL model saved to {path}")
 
     def load(self, path="models/rl_policy.pt"):
-        self.net.load_state_dict(torch.load(path))
-        print(f"  RL model loaded from {path}")
+        self.net.load_state_dict(torch.load(path, map_location=self.device))
+        self.net.to(self.device)
+        print(f"  RL model loaded from {path} ({self.device})")
 
 
 # ---------------------------------------------------------------------------

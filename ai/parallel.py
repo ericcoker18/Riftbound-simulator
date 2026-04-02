@@ -24,8 +24,9 @@ def _init_worker(card_pool, ml_policy_state):
     if ml_policy_state is not None:
         import torch
         from ai.ml_agent import PolicyNetwork
+        # Workers always use CPU (game sim is CPU-bound, GPU is for training)
         _ml_policy = PolicyNetwork()
-        _ml_policy.load_state_dict(ml_policy_state)
+        _ml_policy.load_state_dict(ml_policy_state, strict=False)
         _ml_policy.eval()
     else:
         _ml_policy = None

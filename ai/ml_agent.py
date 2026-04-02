@@ -22,6 +22,8 @@ import torch.nn as nn
 import torch.optim as optim
 from collections import namedtuple
 
+from ai.rl_core import DEVICE as _DEVICE
+
 from game.loader import load_card_pool
 from game.deck import Deck
 from game.player import Player
