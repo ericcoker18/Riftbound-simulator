@@ -926,7 +926,7 @@ elif page == "How It Works":
             <li><strong>Ready/Exhausted</strong> — units enter exhausted, ready at start of your turn</li>
             <li><strong>Keywords</strong> — Assault, Shield, Tank, Backline, Stun, Ganking, Hunt, Temporary, Deathknell all simulated</li>
             <li><strong>Spells & Gear</strong> — parsed from card text, effects resolved (damage, draw, buff, bounce, destroy, equip)</li>
-            <li><strong>Turn limit</strong> — if no one reaches 10 points in 30 turns, highest score wins</li>
+            <li><strong>Turn limit</strong> — if no one reaches 8 points in 30 turns, highest score wins</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
