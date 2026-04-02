@@ -29,7 +29,8 @@ from game.legend import load_legends
 from ai.genetic import (
     random_genome, genome_to_deck, genome_legend, genome_cards,
     summarize_deck, crossover, mutate, select, update_hall_of_fame,
-    fitness_vs_pool, get_legend,
+    fitness_vs_pool, get_legend, evolve_islands, all_legends,
+    head_to_head,
 )
 from ai.parallel import ParallelEvaluator
 from ai.ml_agent import MLAgentTrainer
@@ -91,6 +92,12 @@ CONFIG = {
     # Convergence: stop if top deck composition unchanged for N generations
     "convergence_window": 15,
     "convergence_threshold": 0.95,  # 95% card overlap = converged
+
+    # Island model
+    "island_pop":            20,    # population per legend island
+    "island_gens":           30,    # generations per island
+    "island_top_n":          10,    # survivors per island generation
+    "tournament_games":      50,    # games per matchup in final tournament
 }
 
 
@@ -579,18 +586,114 @@ def main():
     wr = benchmark_vs_expert(rl_net, card_pool, games=200)
     print(f"  Win rate: {wr:.0%}")
 
-    # Evolve
-    write_status("Phase 2: GA Evolution", "Starting massive parallel evolution")
+    # Phase 2: Island model — evolve each legend separately
     print(f"\n{'='*50}")
-    print("  Phase 2: Massive Parallel Evolution")
+    print("  Phase 2: Island Model Evolution")
     print(f"{'='*50}")
     t_start = time.time()
 
-    best_genome, best_score = evolve_massive(
-        card_pool,
+    cfg = CONFIG
+    legends = all_legends()
+    total_islands = len(legends)
+
+    def on_island_done(legend_name, genome, score, idx, total):
+        write_status(
+            "Phase 2: Island Evolution",
+            f"Island {idx+1}/{total}: {legend_name} — score {score:.3f}",
+            progress=(idx + 1) / total,
+            gen=idx + 1, max_gen=total,
+            extra={"legend": legend_name, "best_score": score},
+        )
+
+    write_status("Phase 2: Island Evolution", f"Starting {total_islands} legend islands...")
+
+    best_genome, tournament_results = evolve_islands(
+        card_pool=card_pool,
+        legends=legends,
+        deck_size=cfg["deck_size"],
+        island_pop=cfg["island_pop"],
+        island_gens=cfg["island_gens"],
+        island_top_n=cfg["island_top_n"],
+        mutation_rate=cfg["mutation_rate"],
+        opponent_pool_size=cfg["opponent_pool_size"],
+        games_per_opponent=cfg["games_per_opponent"],
+        hall_of_fame_size=cfg["hall_of_fame_size"],
+        coevo_ratio=cfg["coevo_ratio"],
         ml_policy=ml_policy,
-        meta_genomes=meta_genomes,
+        ml_ratio=cfg["ml_ratio"],
+        tournament_games=cfg["tournament_games"],
+        on_island_complete=on_island_done,
+        verbose=True,
     )
+
+    # Phase 3: Refine the top legends with a larger run
+    if tournament_results:
+        top_legends = [genome_legend(g) for g, wr, _, _ in tournament_results[:5]]
+        print(f"\n{'='*50}")
+        print(f"  Phase 3: Refining Top 5 Legends")
+        print(f"{'='*50}")
+
+        write_status("Phase 3: Refinement", f"Deep evolution for top 5 legends...")
+
+        refined_champions = []
+        for i, legend_name in enumerate(top_legends):
+            print(f"  [{i+1}/5] {legend_name}...", end=" ", flush=True)
+            write_status(
+                "Phase 3: Refinement",
+                f"Refining {legend_name} ({i+1}/5)",
+                progress=(i + 1) / 5,
+                extra={"legend": legend_name},
+            )
+
+            best, score = evolve_islands(
+                card_pool=card_pool,
+                legends=[get_legend(legend_name)],
+                deck_size=cfg["deck_size"],
+                island_pop=cfg["population_size"],
+                island_gens=cfg["max_generations"],
+                island_top_n=cfg["top_n"],
+                mutation_rate=cfg["mutation_rate"],
+                opponent_pool_size=cfg["opponent_pool_size"],
+                games_per_opponent=cfg["games_per_opponent"],
+                hall_of_fame_size=cfg["hall_of_fame_size"],
+                coevo_ratio=cfg["coevo_ratio"],
+                ml_policy=ml_policy,
+                ml_ratio=cfg["ml_ratio"],
+                tournament_games=cfg["tournament_games"],
+                verbose=False,
+            )
+            if best:
+                refined_champions.append(best)
+                print(f"done")
+            else:
+                # Fallback to island champion
+                orig = next((g for g, _, _, _ in tournament_results if genome_legend(g) == legend_name), None)
+                if orig:
+                    refined_champions.append(orig)
+                print(f"fallback")
+
+        # Final tournament among refined champions
+        if len(refined_champions) >= 2:
+            print(f"\n{'='*50}")
+            print(f"  Final Tournament: Top 5 Refined Champions")
+            print(f"{'='*50}")
+
+            write_status("Final Tournament", "Top 5 refined champions battling...")
+
+            from ai.genetic import island_tournament
+            final_results = island_tournament(refined_champions, card_pool,
+                                              games_per_matchup=cfg["tournament_games"] * 2)
+
+            print(f"\n  {'Legend':<35} {'Win Rate':>9} {'W':>5} {'L':>5}")
+            print(f"  {'-'*35} {'-'*9} {'-'*5} {'-'*5}")
+            for genome, wr, wins, losses in final_results:
+                print(f"  {genome_legend(genome):<35} {wr:>9.3f} {wins:>5} {losses:>5}")
+
+            best_genome = final_results[0][0]
+            best_score = final_results[0][1]
+        elif refined_champions:
+            best_genome = refined_champions[0]
+            best_score = 1.0
 
     total_time = time.time() - t_start
 
@@ -599,10 +702,10 @@ def main():
     print("  ABSOLUTE BEST DECK")
     print(f"{'='*50}")
     print(summarize_deck(best_genome))
-    print(f"\n  Training score : {best_score:.3f}")
-    print(f"  Total time     : {total_time/60:.1f} min")
+    print(f"\n  Tournament win rate : {best_score:.3f}")
+    print(f"  Total time          : {total_time/60:.1f} min")
 
-    write_status("Complete", f"Best score: {best_score:.3f}", progress=1.0,
+    write_status("Complete", f"Best: {genome_legend(best_genome)} at {best_score:.0%}", progress=1.0,
                  extra={"best_score": best_score, "legend": genome_legend(best_genome),
                         "total_time_min": round(total_time / 60, 1)})
 
@@ -616,6 +719,16 @@ def main():
             "deck": list(Counter(cards).items())
         }, f, indent=2)
     print("  Saved to results/best_deck.json")
+
+    # Save tournament standings
+    if tournament_results:
+        standings = [
+            {"legend": genome_legend(g), "win_rate": wr, "wins": w, "losses": l}
+            for g, wr, w, l in tournament_results
+        ]
+        with open("results/tournament.json", "w") as f:
+            json.dump(standings, f, indent=2)
+        print("  Saved to results/tournament.json")
 
 
 if __name__ == "__main__":

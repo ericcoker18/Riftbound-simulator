@@ -376,6 +376,162 @@ def run_genetic_algorithm(
 
 
 # ---------------------------------------------------------------------------
+# Island Model Evolution
+# ---------------------------------------------------------------------------
+
+def evolve_island(legend, card_pool, deck_size=40, population_size=20,
+                  generations=30, top_n=10, mutation_rate=0.1,
+                  opponent_pool_size=8, games_per_opponent=5,
+                  hall_of_fame_size=5, coevo_ratio=0.3,
+                  ml_policy=None, ml_ratio=0.0, verbose=False):
+    """
+    Run a focused evolution for a single legend.
+    Returns (best_genome, best_score).
+    """
+    return evolve(
+        card_pool=card_pool, deck_size=deck_size,
+        population_size=population_size, generations=generations,
+        top_n=top_n, mutation_rate=mutation_rate,
+        opponent_pool_size=opponent_pool_size,
+        games_per_opponent=games_per_opponent,
+        hall_of_fame_size=hall_of_fame_size,
+        coevo_ratio=coevo_ratio, ml_policy=ml_policy,
+        ml_ratio=ml_ratio, legend=legend, verbose=verbose,
+    )
+
+
+def island_tournament(champions, card_pool, games_per_matchup=50):
+    """
+    Round-robin tournament between island champions.
+    Returns list of (genome, win_rate, wins, losses) sorted by win rate.
+    """
+    n = len(champions)
+    records = {i: {"wins": 0, "losses": 0} for i in range(n)}
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            wr = head_to_head(champions[i], champions[j], card_pool, games=games_per_matchup)
+            wins_i = int(wr * games_per_matchup)
+            wins_j = games_per_matchup - wins_i
+
+            records[i]["wins"] += wins_i
+            records[i]["losses"] += wins_j
+            records[j]["wins"] += wins_j
+            records[j]["losses"] += wins_i
+
+    results = []
+    for i in range(n):
+        total = records[i]["wins"] + records[i]["losses"]
+        wr = records[i]["wins"] / max(total, 1)
+        results.append((champions[i], wr, records[i]["wins"], records[i]["losses"]))
+
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results
+
+
+def evolve_islands(
+    card_pool,
+    legends=None,
+    deck_size=40,
+    island_pop=20,
+    island_gens=30,
+    island_top_n=10,
+    mutation_rate=0.1,
+    opponent_pool_size=8,
+    games_per_opponent=5,
+    hall_of_fame_size=5,
+    coevo_ratio=0.3,
+    ml_policy=None,
+    ml_ratio=0.0,
+    tournament_games=50,
+    on_island_complete=None,
+    verbose=True,
+):
+    """
+    Island model: run a separate evolution per legend, then tournament.
+
+    1. Each legend gets its own population and evolves independently
+    2. The best deck from each island enters a round-robin tournament
+    3. The overall winner is the best deck across all legends
+
+    on_island_complete: optional callback(legend_name, best_genome, best_score, idx, total)
+                        called after each island finishes (for progress tracking)
+
+    Returns (overall_best_genome, tournament_results).
+    """
+    if legends is None:
+        legends = all_legends()
+
+    if verbose:
+        print(f"\n  Island Model: {len(legends)} legends x {island_gens} gens x {island_pop} pop")
+
+    champions = []
+    champion_details = []
+
+    for i, legend in enumerate(legends):
+        legend_obj = legend if isinstance(legend, Legend) else get_legend(legend)
+        legend_name = legend_obj.name
+
+        # Check there are enough legal cards for this legend
+        legal_count = len([c for c in card_pool if legend_obj.is_legal(c)])
+        if legal_count < deck_size:
+            if verbose:
+                print(f"  [{i+1}/{len(legends)}] {legend_name}: skipped (only {legal_count} legal cards)")
+            continue
+
+        if verbose:
+            print(f"  [{i+1}/{len(legends)}] {legend_name}...", end=" ", flush=True)
+
+        best_genome, best_score = evolve_island(
+            legend=legend_obj, card_pool=card_pool,
+            deck_size=deck_size, population_size=island_pop,
+            generations=island_gens, top_n=island_top_n,
+            mutation_rate=mutation_rate,
+            opponent_pool_size=opponent_pool_size,
+            games_per_opponent=games_per_opponent,
+            hall_of_fame_size=hall_of_fame_size,
+            coevo_ratio=coevo_ratio, ml_policy=ml_policy,
+            ml_ratio=ml_ratio, verbose=False,
+        )
+
+        champions.append(best_genome)
+        champion_details.append({
+            "legend": legend_name,
+            "genome": best_genome,
+            "island_score": best_score,
+        })
+
+        if verbose:
+            print(f"score: {best_score:.3f}")
+
+        if on_island_complete:
+            on_island_complete(legend_name, best_genome, best_score, i, len(legends))
+
+    if not champions:
+        return None, []
+
+    # Final tournament
+    if verbose:
+        print(f"\n  Final Tournament: {len(champions)} island champions, {tournament_games} games per matchup")
+
+    results = island_tournament(champions, card_pool, games_per_matchup=tournament_games)
+
+    if verbose:
+        print(f"\n  {'Legend':<35} {'Island':>7} {'Tourn':>7} {'W':>4} {'L':>4}")
+        print(f"  {'-'*35} {'-'*7} {'-'*7} {'-'*4} {'-'*4}")
+        for genome, wr, wins, losses in results:
+            legend_name = genome_legend(genome)
+            island_score = next(
+                (d["island_score"] for d in champion_details if d["legend"] == legend_name),
+                0,
+            )
+            print(f"  {legend_name:<35} {island_score:>7.3f} {wr:>7.3f} {wins:>4} {losses:>4}")
+
+    overall_best = results[0][0]
+    return overall_best, results
+
+
+# ---------------------------------------------------------------------------
 # Display helpers
 # ---------------------------------------------------------------------------
 
