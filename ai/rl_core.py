@@ -223,7 +223,7 @@ class RiftboundNet(nn.Module):
         return torch.stack(scores)
 
     def score_deploy(self, state: torch.Tensor) -> torch.Tensor:
-        """Score 3 battlefields for deployment. Returns (3,) tensor."""
+        """Score battlefields for deployment. Returns (3,) tensor (padded if < 3)."""
         features = self.forward_backbone(state)
         return self.deploy_head(features)
 
