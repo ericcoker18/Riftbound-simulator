@@ -187,8 +187,8 @@ if _is_sim_running():
 # Top navigation
 # ---------------------------------------------------------------------------
 
-nav_cols = st.columns(5)
-pages = ["Dashboard", "Card Pool", "Meta Decks", "Run Simulation", "Results"]
+nav_cols = st.columns(6)
+pages = ["Dashboard", "Card Pool", "Meta Decks", "Run Simulation", "Results", "How It Works"]
 
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True):
@@ -732,3 +732,180 @@ elif page == "Results":
             chart_layout(fig)
             fig.update_layout(showlegend=False)
             st.plotly_chart(fig, width='stretch')
+
+
+# ===================================================================
+# PAGE: How It Works
+# ===================================================================
+
+elif page == "How It Works":
+    st.markdown('<div class="main-title">How It <span>Works</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">A deep dive into the simulation pipeline</div>', unsafe_allow_html=True)
+
+    # --- Overview ---
+    st.markdown(f"""
+    <div class="card">
+        <h3>Overview</h3>
+        <p>This simulator finds the absolute best competitive Riftbound deck by combining three AI techniques:
+        a <strong>genetic algorithm</strong> that evolves deck compositions, <strong>machine learning</strong> agents
+        that learn card play decisions, and <strong>expert heuristics</strong> that simulate top-player decision making.
+        Every candidate deck is pressure-tested against random opponents, past champions, neural network players,
+        and real tournament-winning decklists from Vegas and Bologna regionals.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- Phase diagram ---
+    section_header("Simulation Phases")
+
+    st.markdown(f"""
+    <div class="card" style="border-left: 4px solid {ACCENT};">
+        <h3>Phase 1a — ML Agent Training (REINFORCE)</h3>
+        <p>A simple neural network learns which cards are worth playing. It plays games against random opponents,
+        receives +1 for wins and -1 for losses, and adjusts its card preferences over time. This produces a basic
+        "ML opponent" that's smarter than random but not expert-level.</p>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Duration: ~1 minute | Skipped if a trained model already exists</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="card" style="border-left: 4px solid {ACCENT};">
+        <h3>Phase 1b — Deep RL Training (PPO Self-Play)</h3>
+        <p>A deeper neural network with <strong>three decision heads</strong> learns by playing against itself:</p>
+        <ul>
+            <li><strong>Card Head</strong> — decides which card to play from hand, or whether to pass</li>
+            <li><strong>Deploy Head</strong> — chooses which of the 3 battlefields to place a unit on</li>
+            <li><strong>Combat Head</strong> — decides whether to attack or hold at each battlefield</li>
+        </ul>
+        <p>It starts making random decisions, then improves each generation by reinforcing choices that led to wins.
+        Exploration temperature starts high (try random strategies) and drops over time (exploit what works).
+        Performance is benchmarked against the Expert heuristic AI every 25 generations.</p>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Duration: ~5-10 minutes | Skipped if a trained model already exists</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="card" style="border-left: 4px solid #3daa5c;">
+        <h3>Phase 2 — Genetic Algorithm Evolution (the core)</h3>
+        <p>This is where decks are actually built and tested. Each generation follows this cycle:</p>
+        <ol>
+            <li><strong>Population</strong> — 100 decks, each with a Legend and 40 domain-legal cards</li>
+            <li><strong>Opponent Pool</strong> — each deck is tested against a mixed field:
+                <ul>
+                    <li>30% random legal decks (baseline consistency)</li>
+                    <li>25% Hall of Fame decks (best decks from past generations)</li>
+                    <li>25% ML agent opponents (neural network making play decisions)</li>
+                    <li>20% tournament meta decks (49 real Vegas/Bologna top-32 lists)</li>
+                </ul>
+            </li>
+            <li><strong>Fitness</strong> — every deck plays ~300 games. Win rate = fitness score</li>
+            <li><strong>Selection</strong> — top 30 decks survive to breed</li>
+            <li><strong>Crossover</strong> — survivors pair up (same Legend only), split decks at a random point, combine halves</li>
+            <li><strong>Mutation</strong> — each card has an 8% chance of being swapped for another domain-legal card</li>
+            <li><strong>Hall of Fame</strong> — the generation's best deck is archived as a future opponent</li>
+            <li><strong>Convergence Check</strong> — if the top deck is 95%+ identical for 15 straight generations, stop early</li>
+        </ol>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Duration: ~10-30 minutes depending on convergence | Uses all CPU cores in parallel</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="card" style="border-left: 4px solid {ACCENT};">
+        <h3>Phase 3 — Meta Analytics Report</h3>
+        <p>After evolution finishes, the simulator analyzes all generations to produce:</p>
+        <ul>
+            <li><strong>Legend Dominance</strong> — which Legend won the most generations</li>
+            <li><strong>Champion Zone</strong> — which champion card paired best with each Legend</li>
+            <li><strong>Supporting Champions</strong> — other champion units that appeared in winning decks</li>
+            <li><strong>Card Frequency</strong> — the 40 most common cards across all top decks</li>
+            <li><strong>Domain & Type Mix</strong> — color and card type distribution</li>
+        </ul>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Generated instantly at end of Phase 2</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- Key concepts ---
+    section_header("Key Concepts")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"""
+        <div class="card">
+            <h3>Expert Strategy AI</h3>
+            <p>Every game in the simulation is played by an Expert heuristic AI that mimics top-player decision making:</p>
+            <ul>
+                <li><strong>Card selection</strong> — evaluates board state, plays for tempo when behind, holds resources when ahead</li>
+                <li><strong>Deployment</strong> — places units at battlefields where they'll have the most impact on scoring</li>
+                <li><strong>Combat</strong> — only attacks when the trade is favorable, holds position to score passively when ahead</li>
+                <li><strong>Spell targeting</strong> — removes highest-threat enemies, prioritizes killable targets and champions</li>
+            </ul>
+            <p>The Expert AI beats the basic AI <strong>72% of the time</strong> in same-deck mirrors, meaning
+            the "best deck" found by the sim must win through card quality, not exploiting bad plays.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"""
+        <div class="card">
+            <h3>Domain-Legal Deck Building</h3>
+            <p>Every deck in the simulation follows Riftbound's real deck-building rules:</p>
+            <ul>
+                <li>Each deck has a <strong>Legend</strong> that defines two domains (colors)</li>
+                <li>Only cards from those two domains can be included</li>
+                <li>The Legend's own champion card is guaranteed (1-2 copies)</li>
+                <li>Other champions from either domain can appear as regular units</li>
+                <li>Champion, spell, gear, and unit cards all follow domain restrictions</li>
+                <li>Each deck is exactly 40 cards with max copy limits per rarity</li>
+            </ul>
+            <p>This means the GA can only discover decks that are <strong>actually legal</strong> in competitive play.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown(f"""
+        <div class="card">
+            <h3>Convergence & Stability</h3>
+            <p><strong>Stability</strong> measures how similar the winning deck has been across recent generations:</p>
+            <ul>
+                <li><strong>0%</strong> — completely different deck wins each generation (still exploring)</li>
+                <li><strong>50%</strong> — some core cards are consistent but the list is still shifting</li>
+                <li><strong>95%+</strong> — the same 38+ cards keep winning (the meta has settled)</li>
+            </ul>
+            <p>When stability stays above 95% for 15 consecutive generations, the simulation
+            declares <strong>convergence</strong> and stops early — it's found the answer.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+        st.markdown(f"""
+        <div class="card">
+            <h3>Tournament Meta Decks</h3>
+            <p>49 real tournament decklists from <strong>Vegas</strong> and <strong>Bologna</strong>
+            Regional Qualifiers are loaded as fixed opponents. Every generation, ~20% of the opponent
+            field consists of these proven competitive lists.</p>
+            <p>This forces evolved decks to beat real strategies — not just random piles of cards.
+            If a deck can't handle Draven aggro or Garen ramp, it gets culled.</p>
+            <p>The GA is essentially asking: <em>"What deck would win a tournament where 20% of the
+            field is Vegas/Bologna top 32?"</em></p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- Game simulation ---
+    section_header("How Games Are Simulated")
+
+    st.markdown(f"""
+    <div class="card">
+        <h3>Game Engine</h3>
+        <p>Each simulated game follows the real Riftbound rules:</p>
+        <ul>
+            <li><strong>3 Battlefields</strong> (Left, Center, Right) — each worth 1 point</li>
+            <li><strong>Point-based scoring</strong> — conquer a battlefield = +1 point, hold it each turn = +1 point</li>
+            <li><strong>Victory at 10 points</strong> — first player to reach the victory score wins</li>
+            <li><strong>Energy + Rune costs</strong> — energy grows each turn (1→10), runes accumulate 1/turn</li>
+            <li><strong>Ready/Exhausted</strong> — units enter exhausted, ready at start of your turn</li>
+            <li><strong>Keywords</strong> — Assault, Shield, Tank, Backline, Stun, Ganking, Hunt, Temporary, Deathknell all simulated</li>
+            <li><strong>Spells & Gear</strong> — parsed from card text, effects resolved (damage, draw, buff, bounce, destroy, equip)</li>
+            <li><strong>Turn limit</strong> — if no one reaches 10 points in 30 turns, highest score wins</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
