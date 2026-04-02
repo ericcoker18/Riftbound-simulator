@@ -672,72 +672,145 @@ elif page == "Run Simulation":
 elif page == "Results":
     st.markdown('<div class="main-title">Simulation <span>Results</span></div>', unsafe_allow_html=True)
 
-    # Sim status
     sim_status_panel()
 
-    result = load_results()
-    if not result:
-        st.markdown('<div class="subtitle">No results yet. Run a simulation to see the best deck.</div>', unsafe_allow_html=True)
+    # Load top 3 results
+    def load_top3():
+        import json
+        if os.path.exists("results/top3_decks.json"):
+            with open("results/top3_decks.json", "r") as f:
+                return json.load(f)
+        # Fallback to old format
+        result = load_results()
+        if result:
+            return [{
+                "legend": result.get("legend", "?"),
+                "win_rate": result.get("score", 0),
+                "champion_zone": None,
+                "main_deck": [{"name": n, "count": c} for n, c in result.get("deck", [])],
+                "total_cards": sum(c for _, c in result.get("deck", [])),
+            }]
+        return []
+
+    top3 = load_top3()
+
+    if not top3:
+        st.markdown('<div class="subtitle">No results yet. Run a simulation to see the best decks.</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="subtitle">Best deck found by the genetic algorithm</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="subtitle">Top {len(top3)} decks from the latest simulation</div>', unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns(3)
-        with col1: stat_box("Legend", result.get("legend", "?").split(" - ")[0])
-        with col2: stat_box("Win Rate", f"{result.get('score', 0):.0%}")
-        with col3:
-            deck_items = result.get("deck", [])
-            stat_box("Cards", sum(c for _, c in deck_items) if deck_items else 0)
+        medals = ["1st", "2nd", "3rd"]
+        medal_colors = [ACCENT, "#aaa", "#cd7f32"]
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        for rank, deck in enumerate(top3):
+            legend = deck.get("legend", "?")
+            legend_short = legend.split(" - ")[0]
+            win_rate = deck.get("win_rate", 0)
+            champ_zone = deck.get("champion_zone")
+            main_deck = deck.get("main_deck", [])
+            total = deck.get("total_cards", 0)
 
-        if deck_items:
-            import pandas as pd
-            cards = load_cards()
-            pool_lookup = {c["name"]: c for c in cards}
-            rows = []
-            for card_name, count in sorted(deck_items, key=lambda x: -x[1]):
-                card = pool_lookup.get(card_name, {})
-                rows.append({
-                    "Card": card_name, "Copies": count,
-                    "Type": card.get("card_type", "?"), "Domain": card.get("domain", "?"),
-                    "Cost": card.get("cost", 0), "Rune": card.get("rune_cost", 0),
-                    "Might": card.get("health", 0), "Rarity": card.get("rarity", "?"),
-                })
-            enriched = pd.DataFrame(rows)
+            color = medal_colors[rank] if rank < 3 else TEXT_DIM
 
-            col_t, col_c = st.columns([3, 2])
-            with col_t:
-                section_header("Decklist")
-                st.dataframe(enriched, width='stretch', hide_index=True, height=500)
-            with col_c:
+            st.markdown(f"""
+            <div class="card" style="border-left: 4px solid {color};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 1.4rem; font-weight: 800; color: {color};">{medals[rank] if rank < 3 else f"#{rank+1}"}</span>
+                        <span style="font-size: 1.4rem; font-weight: 700; color: {TEXT_BRIGHT}; margin-left: 0.8rem;">{legend}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 1.8rem; font-weight: 800; color: {color};">{win_rate:.0%}</span>
+                        <span style="color: {TEXT_DIM}; font-size: 0.85rem; margin-left: 0.3rem;">win rate</span>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Champion zone + stats row
+            col_info, col_champ = st.columns([1, 1])
+            with col_info:
+                if champ_zone:
+                    cz = champ_zone
+                    domain_color = DOMAIN_COLORS.get(cz.get("domain", ""), ACCENT)
+                    st.markdown(f"""
+                    <div class="card">
+                        <h3>Champion Zone</h3>
+                        <div style="font-size: 1.2rem; font-weight: 700; color: {TEXT_BRIGHT};">{cz['name']}</div>
+                        <div style="color: {domain_color}; font-size: 0.9rem;">{cz.get('domain', '?')} domain</div>
+                        <div style="color: {TEXT_DIM}; font-size: 0.85rem; margin-top: 0.3rem;">
+                            {cz.get('count', 1)}x copy | Cost: {cz.get('cost', 0)} | Rune: {cz.get('rune_cost', 0)} | Might: {cz.get('might', 0)}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="card"><h3>Champion Zone</h3><p style="color: {TEXT_DIM};">Not detected</p></div>', unsafe_allow_html=True)
+
+            with col_champ:
+                # Quick stats
+                types = Counter()
+                domains = Counter()
+                for c in main_deck:
+                    types[c.get("type", "?")] += c.get("count", 1)
+                    domains[c.get("domain", "?")] += c.get("count", 1)
+                if champ_zone:
+                    types[champ_zone.get("type", "Unit")] += champ_zone.get("count", 1)
+                    domains[champ_zone.get("domain", "?")] += champ_zone.get("count", 1)
+
+                stats_html = " | ".join(f'<span style="color: {TEXT_BRIGHT};">{count}</span> {t}' for t, count in types.most_common())
+                domain_html = " | ".join(
+                    f'<span style="color: {DOMAIN_COLORS.get(d, TEXT_BRIGHT)};">{count} {d}</span>'
+                    for d, count in domains.most_common()
+                )
+
+                st.markdown(f"""
+                <div class="card">
+                    <h3>Deck Breakdown ({total} cards)</h3>
+                    <div style="margin-bottom: 0.5rem;">{stats_html}</div>
+                    <div>{domain_html}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # Expandable decklist
+            with st.expander(f"View full decklist — {legend_short}", expanded=(rank == 0)):
+                import pandas as pd
+
+                all_cards = main_deck.copy()
+                if champ_zone:
+                    all_cards.insert(0, champ_zone)
+
+                rows = []
+                for c in sorted(all_cards, key=lambda x: -x.get("count", 1)):
+                    is_cz = champ_zone and c.get("name") == champ_zone.get("name")
+                    rows.append({
+                        "": "Champion" if is_cz else "",
+                        "Card": c.get("name", "?"),
+                        "Copies": c.get("count", 1),
+                        "Type": c.get("type", "?"),
+                        "Domain": c.get("domain", "?"),
+                        "Cost": c.get("cost", 0),
+                        "Rune": c.get("rune_cost", 0),
+                        "Might": c.get("might", 0),
+                    })
+
+                df = pd.DataFrame(rows)
+                st.dataframe(df, width='stretch', hide_index=True, height=400)
+
+                # Mana curve
                 import plotly.express as px
-                domain_counts = Counter()
-                for _, r in enriched.iterrows():
-                    domain_counts[r["Domain"]] += r["Copies"]
-                fig = px.pie(names=list(domain_counts.keys()), values=list(domain_counts.values()),
-                            title="Domain Split", hole=0.45, color=list(domain_counts.keys()),
-                            color_discrete_map=DOMAIN_COLORS)
-                st.plotly_chart(chart_layout(fig, 280), width='stretch')
+                cost_dist = Counter()
+                for c in all_cards:
+                    cost_dist[c.get("cost", 0)] += c.get("count", 1)
+                costs = sorted(cost_dist.keys())
+                fig = px.bar(x=costs, y=[cost_dist[c] for c in costs],
+                            title="Mana Curve", labels={"x": "Energy Cost", "y": "Cards"},
+                            color_discrete_sequence=[color])
+                chart_layout(fig, 250)
+                fig.update_layout(showlegend=False)
+                st.plotly_chart(fig, width='stretch')
 
-                type_counts = Counter()
-                for _, r in enriched.iterrows():
-                    type_counts[r["Type"]] += r["Copies"]
-                fig = px.pie(names=list(type_counts.keys()), values=list(type_counts.values()),
-                            title="Card Types", hole=0.45, color_discrete_sequence=PIE_COLORS)
-                st.plotly_chart(chart_layout(fig, 280), width='stretch')
-
-            section_header("Mana Curve")
-            cost_dist = Counter()
-            for _, r in enriched.iterrows():
-                cost_dist[r["Cost"]] += r["Copies"]
-            costs = sorted(cost_dist.keys())
-            fig = px.bar(x=costs, y=[cost_dist[c] for c in costs],
-                        title="Energy Cost Distribution",
-                        labels={"x": "Energy Cost", "y": "Cards"},
-                        color_discrete_sequence=[ACCENT])
-            chart_layout(fig)
-            fig.update_layout(showlegend=False)
-            st.plotly_chart(fig, width='stretch')
+            if rank < len(top3) - 1:
+                st.markdown("<br>", unsafe_allow_html=True)
 
 
 # ===================================================================
@@ -779,7 +852,7 @@ elif page == "How It Works":
         <p>A deeper neural network with <strong>three decision heads</strong> learns by playing against itself:</p>
         <ul>
             <li><strong>Card Head</strong> — decides which card to play from hand, or whether to pass</li>
-            <li><strong>Deploy Head</strong> — chooses which of the 3 battlefields to place a unit on</li>
+            <li><strong>Deploy Head</strong> — chooses which of the 2 battlefields to place a unit on</li>
             <li><strong>Combat Head</strong> — decides whether to attack or hold at each battlefield</li>
         </ul>
         <p>It starts making random decisions, then improves each generation by reinforcing choices that led to wins.

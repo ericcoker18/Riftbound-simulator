@@ -709,8 +709,80 @@ def main():
                  extra={"best_score": best_score, "legend": genome_legend(best_genome),
                         "total_time_min": round(total_time / 60, 1)})
 
-    # Save result
+    # Build top 3 results with full deck breakdowns
     os.makedirs("results", exist_ok=True)
+
+    def _build_deck_entry(genome, win_rate, card_pool):
+        """Build a detailed deck entry with legend, champion zone, and card list."""
+        legend_name = genome_legend(genome)
+        cards = genome_cards(genome)
+        pool_lookup = {c.name: c for c in card_pool}
+
+        # Identify champion zone card (legend's own champion in the deck)
+        try:
+            legend_obj = get_legend(legend_name)
+            own_champ_names = {c.name for c in legend_obj.get_own_champions(card_pool)}
+        except (KeyError, Exception):
+            own_champ_names = set()
+
+        champion_zone = None
+        main_deck = []
+        counts = Counter(cards)
+
+        for card_name, count in sorted(counts.items()):
+            card = pool_lookup.get(card_name, {})
+            is_own_champ = card_name in own_champ_names
+
+            entry = {
+                "name": card_name,
+                "count": count,
+                "type": card.card_type if hasattr(card, 'card_type') else "?",
+                "domain": card.domain if hasattr(card, 'domain') else "?",
+                "cost": card.cost if hasattr(card, 'cost') else 0,
+                "rune_cost": card.rune_cost if hasattr(card, 'rune_cost') else 0,
+                "might": card.health if hasattr(card, 'health') else 0,
+            }
+
+            if is_own_champ and champion_zone is None:
+                champion_zone = entry
+            else:
+                main_deck.append(entry)
+
+        return {
+            "legend": legend_name,
+            "win_rate": win_rate,
+            "champion_zone": champion_zone,
+            "main_deck": main_deck,
+            "total_cards": sum(counts.values()),
+        }
+
+    # Get top 3 from final results
+    if 'final_results' in dir() or (len(refined_champions) >= 2 and final_results):
+        top_3_genomes = final_results[:3]
+    elif tournament_results:
+        top_3_genomes = tournament_results[:3]
+    else:
+        top_3_genomes = [(best_genome, best_score, 0, 0)]
+
+    top_3 = []
+    for entry in top_3_genomes:
+        genome, wr = entry[0], entry[1]
+        deck_entry = _build_deck_entry(genome, wr, card_pool)
+        top_3.append(deck_entry)
+
+        rank = len(top_3)
+        print(f"\n  #{rank}: {deck_entry['legend']}")
+        print(f"       Win rate: {wr:.1%}")
+        if deck_entry['champion_zone']:
+            cz = deck_entry['champion_zone']
+            print(f"       Champion: {cz['name']} x{cz['count']} ({cz['domain']})")
+        print(f"       Cards: {deck_entry['total_cards']}")
+
+    with open("results/top3_decks.json", "w") as f:
+        json.dump(top_3, f, indent=2)
+    print("\n  Saved to results/top3_decks.json")
+
+    # Also save best deck in old format for backwards compat
     cards = genome_cards(best_genome)
     with open("results/best_deck.json", "w") as f:
         json.dump({
@@ -718,7 +790,6 @@ def main():
             "score": best_score,
             "deck": list(Counter(cards).items())
         }, f, indent=2)
-    print("  Saved to results/best_deck.json")
 
     # Save tournament standings
     if tournament_results:
@@ -728,7 +799,7 @@ def main():
         ]
         with open("results/tournament.json", "w") as f:
             json.dump(standings, f, indent=2)
-        print("  Saved to results/tournament.json")
+    print("  Saved to results/")
 
 
 if __name__ == "__main__":
