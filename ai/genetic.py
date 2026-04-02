@@ -286,6 +286,7 @@ def evolve(
     ml_policy=None,
     ml_ratio=0.0,
     legend=None,
+    history=None,
     verbose=True
 ):
     """
@@ -295,7 +296,15 @@ def evolve(
             picks a random legend — cross-legend crossover not allowed,
             so same-legend pairs are selected for breeding.
     """
-    population = [random_genome(card_pool, deck_size, legend) for _ in range(population_size)]
+    # Seed population from historical winners if available
+    seeds = []
+    if history:
+        from ai.memory import seed_population_from_history
+        seeds = seed_population_from_history(history, card_pool, legend, count=min(5, population_size // 4))
+        if seeds and verbose:
+            print(f"    Seeded {len(seeds)} genomes from history")
+
+    population = list(seeds) + [random_genome(card_pool, deck_size, legend) for _ in range(population_size - len(seeds))]
     hall_of_fame = []
 
     best_genome = None
@@ -369,6 +378,7 @@ def run_genetic_algorithm(
     ml_policy=None,
     ml_ratio=0.0,
     legend=None,
+    history=None,
     verbose=True
 ):
     """Entry point matching main.py's call signature. Wraps evolve()."""
@@ -386,6 +396,7 @@ def run_genetic_algorithm(
         ml_policy=ml_policy,
         ml_ratio=ml_ratio,
         legend=legend,
+        history=history,
         verbose=verbose
     )
 
@@ -398,7 +409,7 @@ def evolve_island(legend, card_pool, deck_size=40, population_size=20,
                   generations=30, top_n=10, mutation_rate=0.1,
                   opponent_pool_size=8, games_per_opponent=5,
                   hall_of_fame_size=5, coevo_ratio=0.3,
-                  ml_policy=None, ml_ratio=0.0, verbose=False):
+                  ml_policy=None, ml_ratio=0.0, history=None, verbose=False):
     """
     Run a focused evolution for a single legend.
     Returns (best_genome, best_score).
@@ -411,7 +422,7 @@ def evolve_island(legend, card_pool, deck_size=40, population_size=20,
         games_per_opponent=games_per_opponent,
         hall_of_fame_size=hall_of_fame_size,
         coevo_ratio=coevo_ratio, ml_policy=ml_policy,
-        ml_ratio=ml_ratio, legend=legend, verbose=verbose,
+        ml_ratio=ml_ratio, legend=legend, history=history, verbose=verbose,
     )
 
 
@@ -460,6 +471,7 @@ def evolve_islands(
     ml_ratio=0.0,
     tournament_games=50,
     on_island_complete=None,
+    history=None,
     verbose=True,
 ):
     """
@@ -506,7 +518,7 @@ def evolve_islands(
             games_per_opponent=games_per_opponent,
             hall_of_fame_size=hall_of_fame_size,
             coevo_ratio=coevo_ratio, ml_policy=ml_policy,
-            ml_ratio=ml_ratio, verbose=False,
+            ml_ratio=ml_ratio, history=history, verbose=False,
         )
 
         champions.append(best_genome)

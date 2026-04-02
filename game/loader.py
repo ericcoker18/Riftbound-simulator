@@ -5,6 +5,15 @@ from game.keywords import parse_keywords
 
 DOMAIN_TAGS = {"Order", "Fury", "Chaos", "Body", "Calm", "Mind"}
 
+# Officially banned cards in constructed play (as of March 31, 2026)
+BANNED_CARDS = {
+    "Draven, Vanquisher",      # Unit
+    "Draven - Vanquisher",     # API name format
+    "Scrapheap",               # Gear
+    "Called Shot",              # Spell
+    "Fight or Flight",         # Spell
+}
+
 
 def heuristic_weight(card: Card) -> float:
     """
@@ -42,6 +51,9 @@ def heuristic_weight(card: Card) -> float:
 def load_card_pool(filepath="data/cards.json"):
     with open(filepath, "r", encoding="utf-8") as f:
         raw_cards = json.load(f)
+
+    # Filter out banned cards
+    raw_cards = [d for d in raw_cards if d["name"] not in BANNED_CARDS]
 
     cards = []
     for d in raw_cards:

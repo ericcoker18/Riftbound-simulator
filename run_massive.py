@@ -35,6 +35,10 @@ from ai.genetic import (
 from ai.parallel import ParallelEvaluator
 from ai.ml_agent import MLAgentTrainer
 from ai.self_play import SelfPlayTrainer, benchmark_vs_expert
+from ai.memory import (
+    load_history, save_history, record_run, apply_reputation_weights,
+    get_legend_budget, seed_population_from_history, print_history_summary,
+)
 
 STATUS_PATH = "results/sim_status.json"
 
@@ -566,6 +570,13 @@ def main():
     card_pool = load_card_pool()
     print(f"  Card pool: {len(card_pool)} cards")
 
+    # Load historical knowledge from past runs
+    history = load_history()
+    print_history_summary(history)
+
+    # Apply card reputation from past winners to heuristic weights
+    apply_reputation_weights(card_pool, history)
+
     # Load meta baselines
     print("\n  Loading tournament meta decks...")
     meta_genomes = load_meta_decks("data/meta_decks.json", card_pool)
@@ -623,6 +634,7 @@ def main():
         ml_ratio=cfg["ml_ratio"],
         tournament_games=cfg["tournament_games"],
         on_island_complete=on_island_done,
+        history=history,
         verbose=True,
     )
 
@@ -800,6 +812,12 @@ def main():
         with open("results/tournament.json", "w") as f:
             json.dump(standings, f, indent=2)
     print("  Saved to results/")
+
+    # Record run in persistent history for future runs
+    pool_lookup = {c.name: c for c in card_pool}
+    if tournament_results:
+        record_run(history, tournament_results, pool_lookup)
+        print("  History updated (results/history.json)")
 
 
 if __name__ == "__main__":
