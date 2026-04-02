@@ -60,9 +60,9 @@ def encode_state(player, opponent, battlefields) -> torch.Tensor:
     """
     feats = []
 
-    feats.append(player.score / 10.0)
-    feats.append(opponent.score / 10.0)
-    feats.append(player.energy / 10.0)
+    feats.append(player.score / 8.0)
+    feats.append(opponent.score / 8.0)
+    feats.append(player.energy / 12.0)
     feats.append(player.rune_pool.pool / 10.0)
     feats.append(len(player.hand) / 10.0)
     feats.append(len(player.deck.cards) / 40.0)

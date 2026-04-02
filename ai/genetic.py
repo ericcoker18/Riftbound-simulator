@@ -99,13 +99,32 @@ def random_genome(card_pool, deck_size=40, legend=None):
     return (legend.name, genome)
 
 
+def _legend_domains(genome):
+    """Get the two domains from a genome's legend."""
+    legend_name = genome_legend(genome)
+    try:
+        legend = get_legend(legend_name)
+        domains = sorted(legend.domains)
+        return domains[0], domains[1] if len(domains) > 1 else domains[0]
+    except (KeyError, IndexError):
+        return "Order", "Order"
+
+
+def _make_player(name, genome, card_pool, strategy=None):
+    """Build a Player with correct dual-domain rune pool from the genome's legend."""
+    deck = genome_to_deck(genome, card_pool)
+    d1, d2 = _legend_domains(genome)
+    return Player(name, deck, domain=d1, domain2=d2, strategy=strategy or _expert)
+
+
 def _make_opponent(genome, card_pool, ml_policy=None):
     """Build an opponent Player (or MLPlayer) from a genome."""
     deck = genome_to_deck(genome, card_pool)
+    d1, d2 = _legend_domains(genome)
     if ml_policy is not None:
         from ai.ml_agent import MLPlayer
         return MLPlayer("MLOpponent", deck, ml_policy, training=False)
-    return Player("Opponent", deck, strategy=_expert)
+    return Player("Opponent", deck, domain=d1, domain2=d2, strategy=_expert)
 
 
 # ---------------------------------------------------------------------------
@@ -121,8 +140,7 @@ def fitness_vs_pool(genome, opponent_genomes, card_pool, ml_policy=None):
         else:
             opp_genome, use_ml = entry, False
 
-        deck1 = genome_to_deck(genome, card_pool)
-        p1 = Player("Evolved", deck1, strategy=_expert)
+        p1 = _make_player("Evolved", genome, card_pool)
         p2 = _make_opponent(opp_genome, card_pool, ml_policy if use_ml else None)
 
         result = GameEngine(p1, p2).play_game()
@@ -140,12 +158,9 @@ def evaluate_best(genome, card_pool, games=100):
     """Test the best deck against fresh random opponents."""
     wins = 0
     for _ in range(games):
-        deck1 = genome_to_deck(genome, card_pool)
         opp = random_genome(card_pool, len(genome_cards(genome)))
-        deck2 = genome_to_deck(opp, card_pool)
-
-        p1 = Player("Best", deck1, strategy=_expert)
-        p2 = Player("Random", deck2, strategy=_expert)
+        p1 = _make_player("Best", genome, card_pool)
+        p2 = _make_player("Random", opp, card_pool)
 
         result = GameEngine(p1, p2).play_game()
         if result == 1:
@@ -549,10 +564,8 @@ def head_to_head(genome_a, genome_b, card_pool, games=100):
     """Play two genomes directly. Returns win rate for genome_a."""
     wins = 0
     for _ in range(games):
-        deck1 = genome_to_deck(genome_a, card_pool)
-        deck2 = genome_to_deck(genome_b, card_pool)
-        p1 = Player("A", deck1, strategy=_expert)
-        p2 = Player("B", deck2, strategy=_expert)
+        p1 = _make_player("A", genome_a, card_pool)
+        p2 = _make_player("B", genome_b, card_pool)
         result = GameEngine(p1, p2).play_game()
         if result == 1:
             wins += 1

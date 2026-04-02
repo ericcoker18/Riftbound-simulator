@@ -919,10 +919,10 @@ elif page == "How It Works":
         <h3>Game Engine</h3>
         <p>Each simulated game follows the real Riftbound rules:</p>
         <ul>
-            <li><strong>3 Battlefields</strong> (Left, Center, Right) — each worth 1 point</li>
+            <li><strong>2 Battlefields</strong> (Left and Right) — each worth 1 point</li>
             <li><strong>Point-based scoring</strong> — conquer a battlefield = +1 point, hold it each turn = +1 point</li>
-            <li><strong>Victory at 10 points</strong> — first player to reach the victory score wins</li>
-            <li><strong>Energy + Rune costs</strong> — energy grows each turn (1→10), runes accumulate 1/turn</li>
+            <li><strong>Victory at 8 points</strong> — first player to reach the victory score wins</li>
+            <li><strong>Energy + Rune costs</strong> — energy grows each turn (1→12). 12 rune slots split between the legend's two domains (default 6/6, can be weighted)</li>
             <li><strong>Ready/Exhausted</strong> — units enter exhausted, ready at start of your turn</li>
             <li><strong>Keywords</strong> — Assault, Shield, Tank, Backline, Stun, Ganking, Hunt, Temporary, Deathknell all simulated</li>
             <li><strong>Spells & Gear</strong> — parsed from card text, effects resolved (damage, draw, buff, bounce, destroy, equip)</li>

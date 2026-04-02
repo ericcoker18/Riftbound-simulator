@@ -35,16 +35,16 @@ def encode_game_state(player, opponent, battlefields, turn=0) -> torch.Tensor:
     f = []
 
     # --- Global (8) ---
-    f.append(player.score / 10.0)
-    f.append(opponent.score / 10.0)
-    f.append((player.score - opponent.score) / 10.0)  # score delta
-    f.append(player.energy / 10.0)
+    f.append(player.score / 8.0)
+    f.append(opponent.score / 8.0)
+    f.append((player.score - opponent.score) / 8.0)   # score delta
+    f.append(player.energy / 12.0)
     f.append(player.rune_pool.pool / 10.0)
     f.append(len(player.hand) / 10.0)
     f.append(len(player.deck.cards) / 40.0)
     f.append(turn / 30.0)
 
-    # --- Per-battlefield (3 x 12 = 36) ---
+    # --- Per-battlefield (3 slots x 12 = 36, padded if < 3 bfs) ---
     for i in range(3):
         if i < len(battlefields):
             bf = battlefields[i]

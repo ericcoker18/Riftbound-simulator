@@ -3,7 +3,7 @@ from game.battlefield import Battlefield
 from game.cards import UnitInstance
 
 
-VICTORY_SCORE = 10
+VICTORY_SCORE = 8
 
 
 class GameEngine:
@@ -12,7 +12,7 @@ class GameEngine:
         player1: Player,
         player2: Player,
         max_turns: int = 30,
-        num_battlefields: int = 3,
+        num_battlefields: int = 2,
         victory_score: int = VICTORY_SCORE,
         verbose: bool = False,
     ):
@@ -23,9 +23,10 @@ class GameEngine:
         self.verbose = verbose
         self.turn = 1
 
+        bf_names = ["Left", "Right"][:num_battlefields]
         self.battlefields = [
             Battlefield(i, name=name)
-            for i, name in enumerate(["Left", "Center", "Right"][:num_battlefields])
+            for i, name in enumerate(bf_names)
         ]
 
     def log(self, message: str):

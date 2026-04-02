@@ -9,6 +9,7 @@ _resolver = EffectResolver()
 
 class Player:
     def __init__(self, name: str, deck: Deck, domain: str = "Order",
+                 domain2: str = None, rune_split: tuple = None,
                  health: int = 20, strategy=None):
         self.name = name
         self.deck = deck
@@ -18,7 +19,7 @@ class Player:
         self.energy = 0
         self.hand: list = []
         self.base_units: list = []
-        self.rune_pool = RunePool(domain)
+        self.rune_pool = RunePool(domain, domain2 or domain, rune_split)
         self.xp = 0
         self.strategy = strategy      # ExpertStrategy or None (basic AI)
         self._opponent_name = None    # set by engine at game start
@@ -33,9 +34,9 @@ class Player:
             self.draw_card()
 
     def start_turn(self, battlefields: list):
-        self.max_energy = min(self.max_energy + 1, 10)
+        self.max_energy = min(self.max_energy + 1, 12)
         self.energy = self.max_energy
-        self.rune_pool.channel()
+        self.rune_pool.refresh()
         self.draw_card()
         for unit in self.base_units:
             unit.is_exhausted = False
