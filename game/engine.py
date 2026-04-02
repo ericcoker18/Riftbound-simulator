@@ -1,3 +1,5 @@
+import random as _random
+
 from game.player import Player
 from game.battlefield import Battlefield
 from game.cards import UnitInstance
@@ -22,6 +24,7 @@ class GameEngine:
         self.victory_score = victory_score
         self.verbose = verbose
         self.turn = 1
+        self.is_first_turn_p2 = True   # tracks P2's bonus channel
 
         bf_names = ["Left", "Right"][:num_battlefields]
         self.battlefields = [
@@ -34,14 +37,33 @@ class GameEngine:
             print(message)
 
     # ------------------------------------------------------------------
-    # Setup
+    # Setup: dice roll, draw 4, mulligan
     # ------------------------------------------------------------------
 
     def setup(self):
         self.player1.deck.shuffle()
         self.player2.deck.shuffle()
-        self.player1.draw_opening_hand()
-        self.player2.draw_opening_hand()
+
+        # Dice roll — high roll goes first (winner almost always chooses first)
+        roll1 = _random.randint(1, 20)
+        roll2 = _random.randint(1, 20)
+        while roll1 == roll2:
+            roll1 = _random.randint(1, 20)
+            roll2 = _random.randint(1, 20)
+
+        if roll2 > roll1:
+            # Player 2 won the roll — swap so the winner is always P1
+            self.player1, self.player2 = self.player2, self.player1
+
+        self.log(f"Dice roll: {self.player1.name} goes first")
+
+        # Draw 4 cards each
+        self.player1.draw_opening_hand(4)
+        self.player2.draw_opening_hand(4)
+
+        # Mulligan up to 2 cards (AI decides which to swap)
+        self.player1.mulligan(2)
+        self.player2.mulligan(2)
 
     # ------------------------------------------------------------------
     # Keyword helpers (operate on UnitInstance)
@@ -188,7 +210,15 @@ class GameEngine:
         if winner:
             return winner
 
-        active.start_turn(self.battlefields)
+        # Determine runes to channel:
+        # - Normal: 2 runes
+        # - P2's very first turn: 3 runes (compensation for going second)
+        runes = 2
+        if self.is_first_turn_p2 and active == self.player2:
+            runes = 3
+            self.is_first_turn_p2 = False
+
+        active.start_turn(self.battlefields, runes_to_channel=runes)
 
         # Main Phase
         active.play_cards(self.battlefields, opponent)

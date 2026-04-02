@@ -29,14 +29,42 @@ class Player:
         if card is not None:
             self.hand.append(card)
 
-    def draw_opening_hand(self, hand_size: int = 3):
+    def draw_opening_hand(self, hand_size: int = 4):
         for _ in range(hand_size):
             self.draw_card()
 
-    def start_turn(self, battlefields: list):
+    def mulligan(self, count: int = 0):
+        """
+        Put back up to `count` cards from hand and draw replacements.
+        AI heuristic: mulligan cards that cost more than 5 (too expensive
+        for early game) up to the allowed count.
+        """
+        if count <= 0 or not self.hand:
+            return
+        # Find expensive cards to mulligan
+        expensive = sorted(
+            [c for c in self.hand if c.cost > 5],
+            key=lambda c: c.cost, reverse=True
+        )
+        to_mulligan = expensive[:count]
+        for card in to_mulligan:
+            self.hand.remove(card)
+            self.deck.cards.append(card)
+        self.deck.shuffle()
+        for _ in range(len(to_mulligan)):
+            self.draw_card()
+
+    def start_turn(self, battlefields: list, runes_to_channel: int = 2):
+        """
+        Start of turn:
+        - Gain 1 energy (max 12)
+        - Channel runes (normally 2; P2 gets 3 on their first turn)
+        - Draw 1 card
+        - Ready all units
+        """
         self.max_energy = min(self.max_energy + 1, 12)
         self.energy = self.max_energy
-        self.rune_pool.refresh()
+        self.rune_pool.channel(runes_to_channel)
         self.draw_card()
         for unit in self.base_units:
             unit.is_exhausted = False
