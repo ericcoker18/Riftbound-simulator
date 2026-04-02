@@ -66,19 +66,19 @@ def clear_status():
 CONFIG = {
     # ML training (basic REINFORCE)
     "ml_model_path":     "models/policy.pt",
-    "ml_generations":    100,
-    "ml_games_per_gen":  30,
+    "ml_generations":    30,
+    "ml_games_per_gen":  20,
 
     # RL self-play (PPO)
     "rl_model_path":     "models/rl_policy.pt",
-    "rl_generations":    200,
-    "rl_games_per_gen":  30,
+    "rl_generations":    50,
+    "rl_games_per_gen":  20,
 
     # GA evolution
     "deck_size":         40,
-    "population_size":   100,
-    "max_generations":   200,
-    "top_n":             30,
+    "population_size":   50,
+    "max_generations":   60,
+    "top_n":             20,
     "mutation_rate":     0.08,
     "opponent_pool_size": 20,
     "games_per_opponent": 15,
@@ -628,20 +628,20 @@ def main():
 
     # Phase 3: Refine the top legends with a larger run
     if tournament_results:
-        top_legends = [genome_legend(g) for g, wr, _, _ in tournament_results[:5]]
+        top_legends = [genome_legend(g) for g, wr, _, _ in tournament_results[:3]]
         print(f"\n{'='*50}")
-        print(f"  Phase 3: Refining Top 5 Legends")
+        print(f"  Phase 3: Refining Top 3 Legends")
         print(f"{'='*50}")
 
         write_status("Phase 3: Refinement", f"Deep evolution for top 5 legends...")
 
         refined_champions = []
         for i, legend_name in enumerate(top_legends):
-            print(f"  [{i+1}/5] {legend_name}...", end=" ", flush=True)
+            print(f"  [{i+1}/3] {legend_name}...", end=" ", flush=True)
             write_status(
                 "Phase 3: Refinement",
-                f"Refining {legend_name} ({i+1}/5)",
-                progress=(i + 1) / 5,
+                f"Refining {legend_name} ({i+1}/3)",
+                progress=(i + 1) / 3,
                 extra={"legend": legend_name},
             )
 
@@ -675,7 +675,7 @@ def main():
         # Final tournament among refined champions
         if len(refined_champions) >= 2:
             print(f"\n{'='*50}")
-            print(f"  Final Tournament: Top 5 Refined Champions")
+            print(f"  Final Tournament: Top 3 Refined Champions")
             print(f"{'='*50}")
 
             write_status("Final Tournament", "Top 5 refined champions battling...")
