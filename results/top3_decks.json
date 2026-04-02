@@ -1,0 +1,1004 @@
+[
+  {
+    "legend": "Jhin - Virtuoso",
+    "win_rate": 0.7083333333333334,
+    "champion_zone": {
+      "name": "Jhin - Meticulous Killer",
+      "count": 1,
+      "type": "Unit",
+      "domain": "Mind",
+      "cost": 4,
+      "rune_cost": 0,
+      "might": 4
+    },
+    "main_deck": [
+      {
+        "name": "Annie - Fiery",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 5,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Blazing Scorcher",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 5,
+        "rune_cost": 0,
+        "might": 5
+      },
+      {
+        "name": "Blood Rush",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 1,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Chakram Dancer",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Chemtech Enforcer",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Cleave",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 1,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Consult the Past",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Energy Conduit",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Final Spark",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 8,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Firestorm",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Forecaster",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Frigid Jewel",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Gearhead",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 5,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Hextech Ray",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 1,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Icevale Archer",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Inferna",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 1
+      },
+      {
+        "name": "Jhin - Murderous Artist",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Kai'Sa - Evolutionary",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Lucian - Gunslinger",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Mega-Mech",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 7,
+        "rune_cost": 0,
+        "might": 8
+      },
+      {
+        "name": "Moonfall",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Mushroom Pouch",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Noxian Guillotine",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Ornn - Forge God",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 6,
+        "rune_cost": 0,
+        "might": 4
+      },
+      {
+        "name": "Piercing Light",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 2,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Plundering Poro",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Red Brambleback",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Rell - Magnetic",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 4
+      },
+      {
+        "name": "Rocket Barrage",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Scorchclaw",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 3
+      },
+      {
+        "name": "Seal of Insight",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 0,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Shakedown",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 2,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Sprite Call",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Undying Legion",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Fury",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Upstage Comedy",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Void Seeker",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Fury",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 0
+      }
+    ],
+    "total_cards": 40
+  },
+  {
+    "legend": "Poppy - Keeper of the Hammer",
+    "win_rate": 0.625,
+    "champion_zone": {
+      "name": "Poppy - Defender of the Meek",
+      "count": 2,
+      "type": "Unit",
+      "domain": "Order",
+      "cost": 6,
+      "rune_cost": 1,
+      "might": 5
+    },
+    "main_deck": [
+      {
+        "name": "Altar of Memories",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Arachnoid Horror",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Blood Rose",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Body",
+        "cost": 1,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Catalyst of Aeons",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Body",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Cruel Patron",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 6
+      },
+      {
+        "name": "Dauntless Vanguard",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Deathgrip",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Direwing",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 7,
+        "rune_cost": 0,
+        "might": 7
+      },
+      {
+        "name": "Fiora - Victorious",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 4
+      },
+      {
+        "name": "Fiora - Worthy",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Forge of the Future",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Gemhand Hunter",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Gentle Gemdragon",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 8,
+        "rune_cost": 0,
+        "might": 8
+      },
+      {
+        "name": "Grim Resolve",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Body",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Heroic Charge",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Honest Broker",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Kinkou Initiate",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Laurent Duelist",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Mageseeker Investigator",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 4
+      },
+      {
+        "name": "Master Yi - Honed",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 7,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Miss Fortune - Captain",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 5,
+        "rune_cost": 1,
+        "might": 5
+      },
+      {
+        "name": "Petty Officer",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 5,
+        "rune_cost": 0,
+        "might": 5
+      },
+      {
+        "name": "Rek'Sai - Swarm Queen",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 5,
+        "rune_cost": 1,
+        "might": 5
+      },
+      {
+        "name": "Sacrifice",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 1,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Sandshifter",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 5,
+        "rune_cost": 2,
+        "might": 6
+      },
+      {
+        "name": "Scrutinizing Sergeant",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 6,
+        "rune_cost": 0,
+        "might": 6
+      },
+      {
+        "name": "Sett - Brawler",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 5,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Showstopper",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Body",
+        "cost": 1,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Soaring Scout",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 1
+      },
+      {
+        "name": "Soraka - Wanderer",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Towering Combatant",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Trinity Force",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Body",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Udyr - Wildman",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Unyielding Spirit",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Body",
+        "cost": 1,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Viktor - Leader",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Wildclaw Shaman",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Body",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 3
+      }
+    ],
+    "total_cards": 40
+  },
+  {
+    "legend": "LeBlanc - Deceiver",
+    "win_rate": 0.5333333333333333,
+    "champion_zone": {
+      "name": "LeBlanc - Everywhere At Once",
+      "count": 1,
+      "type": "Unit",
+      "domain": "Mind",
+      "cost": 4,
+      "rune_cost": 0,
+      "might": 4
+    },
+    "main_deck": [
+      {
+        "name": "Ahri - Inquisitive",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 3
+      },
+      {
+        "name": "Bandle Soldier",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 5
+      },
+      {
+        "name": "Blade of the Ruined King",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Bonds of Strength",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Breakneck Mech",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 8,
+        "rune_cost": 2,
+        "might": 7
+      },
+      {
+        "name": "Chemtech Cask",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 1,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Cruel Patron",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 6
+      },
+      {
+        "name": "Daring Poro",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Divining Shells",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Faithful Manufactor",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Forge of the Future",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Frigid Jewel",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Galio - Indefatigable",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Jeweled Colossus",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 5,
+        "rune_cost": 0,
+        "might": 5
+      },
+      {
+        "name": "Karma - Channeler",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "LeBlanc - Fragmented",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 3
+      },
+      {
+        "name": "Lecturing Yordle",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 2
+      },
+      {
+        "name": "Malzahar - Fanatic",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 4,
+        "rune_cost": 0,
+        "might": 3
+      },
+      {
+        "name": "Mega-Mech",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 7,
+        "rune_cost": 0,
+        "might": 8
+      },
+      {
+        "name": "Ornn - Forge God",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 6,
+        "rune_cost": 0,
+        "might": 4
+      },
+      {
+        "name": "Progress Day",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Ruined Rex",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Rumble - Scrapper",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 5,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Sacrifice",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 1,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Salvage",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Sandshifter",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 5,
+        "rune_cost": 2,
+        "might": 6
+      },
+      {
+        "name": "Seal of Insight",
+        "count": 1,
+        "type": "Gear",
+        "domain": "Mind",
+        "cost": 0,
+        "rune_cost": 1,
+        "might": 0
+      },
+      {
+        "name": "Shadow's Call",
+        "count": 2,
+        "type": "Spell",
+        "domain": "Order",
+        "cost": 2,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Shen - Kinkou",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 3
+      },
+      {
+        "name": "Sprite Burst",
+        "count": 1,
+        "type": "Spell",
+        "domain": "Mind",
+        "cost": 5,
+        "rune_cost": 0,
+        "might": 0
+      },
+      {
+        "name": "Stalking Wolf",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 4,
+        "rune_cost": 1,
+        "might": 6
+      },
+      {
+        "name": "Wraith of Echoes",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Mind",
+        "cost": 6,
+        "rune_cost": 1,
+        "might": 5
+      },
+      {
+        "name": "Xin Zhao - Vigilant",
+        "count": 2,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 1,
+        "might": 4
+      },
+      {
+        "name": "Zaun Punk",
+        "count": 1,
+        "type": "Unit",
+        "domain": "Order",
+        "cost": 3,
+        "rune_cost": 0,
+        "might": 3
+      }
+    ],
+    "total_cards": 40
+  }
+]

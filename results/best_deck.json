@@ -1,146 +1,114 @@
 {
-  "legend": "LeBlanc - Deceiver",
-  "score": 0.7296296296296296,
+  "legend": "Poppy - Keeper of the Hammer",
+  "score": 0.97,
   "deck": [
     [
-      "LeBlanc - Fragmented",
+      "Shen - Kinkou",
       2
     ],
     [
-      "Trifarian Gloryseeker",
+      "Trusty Ramhound",
       2
     ],
     [
-      "Stupefy",
-      1
-    ],
-    [
-      "Loyal Poro",
-      1
-    ],
-    [
-      "Sacrifice",
-      1
-    ],
-    [
-      "Spectral Centaur",
-      1
-    ],
-    [
-      "Sumpworks Map",
-      1
-    ],
-    [
-      "Kai'Sa - Evolutionary",
-      1
-    ],
-    [
-      "Chemtech Cask",
-      2
-    ],
-    [
-      "Safety Inspector",
-      1
-    ],
-    [
-      "Vanguard Helm",
-      1
-    ],
-    [
-      "Noxian Drummer",
-      1
-    ],
-    [
-      "World Atlas",
-      1
-    ],
-    [
-      "Fiora - Victorious",
-      1
-    ],
-    [
-      "Ruined Rex",
+      "Veteran Poro",
       3
     ],
     [
-      "Downstage Dramatics",
+      "Unsung Hero",
       1
     ],
     [
-      "Jayce - Man of Progress",
+      "Daring Poro",
       1
     ],
     [
-      "Fate Weaver",
+      "Enthralling Protector",
       1
     ],
     [
-      "Experimental Hexplate",
+      "Nidalee - Cat Form",
       1
     ],
     [
-      "Sprite Fountain",
+      "Glasc Mixologist",
       1
     ],
     [
-      "Diana - Lunari",
+      "Nilah - Joyful Ascetic",
+      2
+    ],
+    [
+      "Lee Sin - Centered",
+      2
+    ],
+    [
+      "Demacian Diplomat",
       1
     ],
     [
-      "Gustwalker",
+      "Sea Monkey",
+      2
+    ],
+    [
+      "Kraken Hunter",
+      3
+    ],
+    [
+      "Determined Sentry",
+      3
+    ],
+    [
+      "Hunter's Machete",
       1
     ],
     [
-      "Call to Glory",
+      "Confront",
       1
     ],
     [
-      "Starhound",
+      "Gemhand Hunter",
       1
     ],
     [
-      "Blue Sentinel",
+      "Galio - Indefatigable",
+      2
+    ],
+    [
+      "Cruel Patron",
       1
     ],
     [
-      "Deadly Flourish",
+      "Vanguard Captain",
       1
     ],
     [
-      "Forge of the Future",
+      "Zaun Punk",
       1
     ],
     [
-      "Jhin - Meticulous Killer",
+      "Spectral Matron",
       1
     ],
     [
-      "Eager Apprentice",
+      "Ruin Runner",
       1
     ],
     [
-      "Dr. Mundo - Expert",
+      "Trifarian Gloryseeker",
       1
     ],
     [
-      "Dropboarder",
+      "Xin Zhao - Vigilant",
       1
     ],
     [
-      "Divining Shells",
+      "Pakaa Cub",
       1
     ],
     [
-      "The Zero Drive",
-      1
-    ],
-    [
-      "Plundering Poro",
-      1
-    ],
-    [
-      "Commander Ledros",
-      1
+      "Miss Fortune - Captain",
+      2
     ]
   ]
 }
