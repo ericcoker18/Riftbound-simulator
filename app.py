@@ -173,8 +173,8 @@ def _is_sim_running():
             phase = status.get("phase", "")
             ts = status.get("timestamp", 0)
             age = _time.time() - ts
-            # Running if not complete and updated within last 60 seconds
-            return phase != "Complete" and age < 60
+            # Running if not complete and updated within last 5 minutes
+            return phase != "Complete" and age < 300
         except Exception:
             return False
     return False
@@ -305,8 +305,8 @@ def sim_status_panel():
 
     is_complete = phase == "Complete"
 
-    # If stale (>60s without update) and not complete, show as stalled
-    if age > 60 and not is_complete:
+    # If stale (>5 min without update) and not complete, show as stalled
+    if age > 300 and not is_complete:
         st.markdown(f"""
         <div class="status-panel">
             <div class="status-phase">&#9888; Simulation Stalled</div>
