@@ -1,0 +1,322 @@
+[
+  {
+    "name": "Jhin - Virtuoso",
+    "domains": [
+      "Fury",
+      "Mind"
+    ],
+    "champion_tag": "Jhin"
+  },
+  {
+    "name": "Poppy - Keeper of the Hammer",
+    "domains": [
+      "Body",
+      "Order"
+    ],
+    "champion_tag": "Poppy"
+  },
+  {
+    "name": "LeBlanc - Deceiver",
+    "domains": [
+      "Mind",
+      "Order"
+    ],
+    "champion_tag": "LeBlanc"
+  },
+  {
+    "name": "Ivern - Green Father",
+    "domains": [
+      "Calm",
+      "Order"
+    ],
+    "champion_tag": "Ivern"
+  },
+  {
+    "name": "Kha'Zix - Voidreaver",
+    "domains": [
+      "Body",
+      "Chaos"
+    ],
+    "champion_tag": "Kha'Zix"
+  },
+  {
+    "name": "Vex - Gloomist",
+    "domains": [
+      "Calm",
+      "Chaos"
+    ],
+    "champion_tag": "Vex"
+  },
+  {
+    "name": "Vi - Piltover Enforcer",
+    "domains": [
+      "Fury",
+      "Order"
+    ],
+    "champion_tag": "Vi"
+  },
+  {
+    "name": "Sett - The Boss",
+    "domains": [
+      "Body",
+      "Order"
+    ],
+    "champion_tag": "Sett"
+  },
+  {
+    "name": "Teemo - Swift Scout",
+    "domains": [
+      "Mind",
+      "Chaos"
+    ],
+    "champion_tag": "Teemo"
+  },
+  {
+    "name": "Miss Fortune - Bounty Hunter",
+    "domains": [
+      "Body",
+      "Chaos"
+    ],
+    "champion_tag": "Miss Fortune"
+  },
+  {
+    "name": "Viktor - Herald of the Arcane",
+    "domains": [
+      "Mind",
+      "Order"
+    ],
+    "champion_tag": "Viktor"
+  },
+  {
+    "name": "Leona - Radiant Dawn",
+    "domains": [
+      "Calm",
+      "Order"
+    ],
+    "champion_tag": "Leona"
+  },
+  {
+    "name": "Yasuo - Unforgiven",
+    "domains": [
+      "Calm",
+      "Chaos"
+    ],
+    "champion_tag": "Yasuo"
+  },
+  {
+    "name": "Ahri - Nine-Tailed Fox",
+    "domains": [
+      "Calm",
+      "Mind"
+    ],
+    "champion_tag": "Ahri"
+  },
+  {
+    "name": "Lee Sin - Blind Monk",
+    "domains": [
+      "Calm",
+      "Body"
+    ],
+    "champion_tag": "Lee Sin"
+  },
+  {
+    "name": "Jinx - Loose Cannon",
+    "domains": [
+      "Fury",
+      "Chaos"
+    ],
+    "champion_tag": "Jinx"
+  },
+  {
+    "name": "Darius - Hand of Noxus",
+    "domains": [
+      "Fury",
+      "Order"
+    ],
+    "champion_tag": "Darius"
+  },
+  {
+    "name": "Kai'Sa - Daughter of the Void",
+    "domains": [
+      "Fury",
+      "Mind"
+    ],
+    "champion_tag": "Kai'Sa"
+  },
+  {
+    "name": "Diana - Scorn of the Moon",
+    "domains": [
+      "Mind",
+      "Chaos"
+    ],
+    "champion_tag": "Diana"
+  },
+  {
+    "name": "Rengar - Pridestalker",
+    "domains": [
+      "Fury",
+      "Body"
+    ],
+    "champion_tag": "Rengar"
+  },
+  {
+    "name": "Pyke - Bloodharbor Ripper",
+    "domains": [
+      "Fury",
+      "Chaos"
+    ],
+    "champion_tag": "Pyke"
+  },
+  {
+    "name": "Master Yi - Wuju Master",
+    "domains": [
+      "Calm",
+      "Body"
+    ],
+    "champion_tag": "Master Yi"
+  },
+  {
+    "name": "Lillia - Bashful Bloom",
+    "domains": [
+      "Calm",
+      "Mind"
+    ],
+    "champion_tag": "Lillia"
+  },
+  {
+    "name": "Volibear - Relentless Storm",
+    "domains": [
+      "Fury",
+      "Body"
+    ],
+    "champion_tag": "Volibear"
+  },
+  {
+    "name": "Sivir - Battle Mistress",
+    "domains": [
+      "Body",
+      "Chaos"
+    ],
+    "champion_tag": "Sivir"
+  },
+  {
+    "name": "Rumble - Mechanized Menace",
+    "domains": [
+      "Fury",
+      "Mind"
+    ],
+    "champion_tag": "Rumble"
+  },
+  {
+    "name": "Rek'sai - Void Burrower",
+    "domains": [
+      "Fury",
+      "Order"
+    ],
+    "champion_tag": "Rek'Sai"
+  },
+  {
+    "name": "Ornn - Fire Below the Mountain",
+    "domains": [
+      "Calm",
+      "Mind"
+    ],
+    "champion_tag": "Ornn"
+  },
+  {
+    "name": "Lucian - Purifier",
+    "domains": [
+      "Fury",
+      "Body"
+    ],
+    "champion_tag": "Lucian"
+  },
+  {
+    "name": "Jax - Grandmaster At Arms",
+    "domains": [
+      "Calm",
+      "Body"
+    ],
+    "champion_tag": "Jax"
+  },
+  {
+    "name": "Master Yi - Wuju Bladesman",
+    "domains": [
+      "Calm",
+      "Body"
+    ],
+    "champion_tag": "Master Yi"
+  },
+  {
+    "name": "Lux - Lady of Luminosity",
+    "domains": [
+      "Mind",
+      "Order"
+    ],
+    "champion_tag": "Lux"
+  },
+  {
+    "name": "Annie - Dark Child",
+    "domains": [
+      "Fury",
+      "Chaos"
+    ],
+    "champion_tag": "Annie"
+  },
+  {
+    "name": "Garen - Might of Demacia",
+    "domains": [
+      "Body",
+      "Order"
+    ],
+    "champion_tag": "Garen"
+  },
+  {
+    "name": "Azir - Emperor of the Sands",
+    "domains": [
+      "Calm",
+      "Order"
+    ],
+    "champion_tag": "Azir"
+  },
+  {
+    "name": "Draven - Glorious Executioner",
+    "domains": [
+      "Fury",
+      "Chaos"
+    ],
+    "champion_tag": "Draven"
+  },
+  {
+    "name": "Ezreal - Prodigal Explorer",
+    "domains": [
+      "Mind",
+      "Chaos"
+    ],
+    "champion_tag": "Ezreal"
+  },
+  {
+    "name": "Fiora - Grand Duelist",
+    "domains": [
+      "Body",
+      "Order"
+    ],
+    "champion_tag": "Fiora"
+  },
+  {
+    "name": "Irelia - Blade Dancer",
+    "domains": [
+      "Calm",
+      "Chaos"
+    ],
+    "champion_tag": "Irelia"
+  },
+  {
+    "name": "Renata Glasc - Chem-Baroness",
+    "domains": [
+      "Mind",
+      "Order"
+    ],
+    "champion_tag": "Renata Glasc"
+  }
+]
