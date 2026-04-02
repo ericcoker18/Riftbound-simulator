@@ -9,7 +9,7 @@ import torch
 import random
 
 from game.strategy import ExpertStrategy, card_play_score
-from ai.rl_core import encode_game_state, encode_card, RiftboundNet, Step, Trajectory
+from ai.rl_core import encode_game_state, encode_card, RiftboundNet, Step, Trajectory, DEVICE
 
 
 class RLStrategy(ExpertStrategy):
@@ -40,7 +40,7 @@ class RLStrategy(ExpertStrategy):
     def _get_state(self, player):
         if self._opponent and self._battlefields:
             return encode_game_state(player, self._opponent, self._battlefields, self._turn)
-        return torch.zeros(64)
+        return torch.zeros(64, device=DEVICE)
 
     # --- Card selection ---
 
@@ -65,7 +65,7 @@ class RLStrategy(ExpertStrategy):
             value = self.net.value(state)
 
         # Add "pass" option (score 0)
-        pass_score = torch.tensor([0.0])
+        pass_score = torch.tensor([0.0], device=DEVICE)
         all_scores = torch.cat([scores, pass_score])
 
         # Temperature-scaled softmax for exploration
@@ -91,7 +91,7 @@ class RLStrategy(ExpertStrategy):
             # Re-score remaining cards
             rem_cards = [c for _, c in remaining]
             rem_scores = self.net.score_cards(state, rem_cards) if self.training else scores[[i for i, _ in remaining]]
-            pass_s = torch.tensor([0.0])
+            pass_s = torch.tensor([0.0], device=DEVICE)
             all_s = torch.cat([rem_scores, pass_s])
             probs = torch.softmax(all_s / max(self.temperature, 0.1), dim=0)
             dist = torch.distributions.Categorical(probs)
@@ -102,7 +102,7 @@ class RLStrategy(ExpertStrategy):
                 # Chose to pass — stop playing
                 if self.training:
                     self.trajectory.steps.append(Step(
-                        state=state, action=idx, log_prob=dist.log_prob(torch.tensor(idx)),
+                        state=state, action=idx, log_prob=dist.log_prob(torch.tensor(idx, device=DEVICE)),
                         value=value, decision_type="card_pass"
                     ))
                 break
@@ -115,7 +115,7 @@ class RLStrategy(ExpertStrategy):
 
             if self.training:
                 self.trajectory.steps.append(Step(
-                    state=state, action=idx, log_prob=dist.log_prob(torch.tensor(idx)),
+                    state=state, action=idx, log_prob=dist.log_prob(torch.tensor(idx, device=DEVICE)),
                     value=value, decision_type="card"
                 ))
 
@@ -144,7 +144,7 @@ class RLStrategy(ExpertStrategy):
 
         if self.training:
             self.trajectory.steps.append(Step(
-                state=state, action=idx, log_prob=dist.log_prob(torch.tensor(idx)),
+                state=state, action=idx, log_prob=dist.log_prob(torch.tensor(idx, device=DEVICE)),
                 value=value, decision_type="deploy"
             ))
 
@@ -169,7 +169,7 @@ class RLStrategy(ExpertStrategy):
         if self.training:
             # Log prob for the chosen action
             p = attack_prob if attack else (1 - attack_prob)
-            log_p = torch.log(torch.tensor(max(p, 1e-8)))
+            log_p = torch.log(torch.tensor(max(p, 1e-8), device=DEVICE))
             self.trajectory.steps.append(Step(
                 state=state, action=1 if attack else 0,
                 log_prob=log_p, value=value, decision_type="combat"

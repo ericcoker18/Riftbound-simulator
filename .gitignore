@@ -1,8 +1,9 @@
 __pycache__/
+venv*/
 *.pyc
 *.pyo
 models/
-results/
+results/run_log.json
 .env
 *.egg-info/
 dist/
