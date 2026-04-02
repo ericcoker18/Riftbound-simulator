@@ -1,0 +1,62 @@
+[
+  {
+    "legend": "LeBlanc - Deceiver",
+    "win_rate": 0.7296296296296296,
+    "wins": 197,
+    "losses": 73
+  },
+  {
+    "legend": "Jhin - Virtuoso",
+    "win_rate": 0.7074074074074074,
+    "wins": 191,
+    "losses": 79
+  },
+  {
+    "legend": "Poppy - Keeper of the Hammer",
+    "win_rate": 0.7074074074074074,
+    "wins": 191,
+    "losses": 79
+  },
+  {
+    "legend": "Ivern - Green Father",
+    "win_rate": 0.5888888888888889,
+    "wins": 159,
+    "losses": 111
+  },
+  {
+    "legend": "Kha'Zix - Voidreaver",
+    "win_rate": 0.5370370370370371,
+    "wins": 145,
+    "losses": 125
+  },
+  {
+    "legend": "Vex - Gloomist",
+    "win_rate": 0.48518518518518516,
+    "wins": 131,
+    "losses": 139
+  },
+  {
+    "legend": "Sett - The Boss",
+    "win_rate": 0.37407407407407406,
+    "wins": 101,
+    "losses": 169
+  },
+  {
+    "legend": "Vi - Piltover Enforcer",
+    "win_rate": 0.35555555555555557,
+    "wins": 96,
+    "losses": 174
+  },
+  {
+    "legend": "Teemo - Swift Scout",
+    "win_rate": 0.28888888888888886,
+    "wins": 78,
+    "losses": 192
+  },
+  {
+    "legend": "Miss Fortune - Bounty Hunter",
+    "win_rate": 0.22592592592592592,
+    "wins": 61,
+    "losses": 209
+  }
+]
