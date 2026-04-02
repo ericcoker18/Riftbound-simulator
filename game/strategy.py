@@ -21,40 +21,46 @@ import random
 
 DOMAIN_THREATS = {
     "Order": {
-        "removal_density": 0.8,    # lots of kill spells (Vengeance, Cull the Weak, Imperial Decree)
+        "removal_density": 0.8,
         "aggro_density":   0.3,
         "control_density": 0.7,
-        "key_removal_cost": 3,     # cheapest common removal spell cost
+        "key_removal_cost": 3,
+        "combat_trick_might": 2,   # moderate combat tricks
     },
     "Fury": {
-        "removal_density": 0.5,    # some damage spells (Falling Star, Cleave)
-        "aggro_density":   0.9,    # very aggressive units
+        "removal_density": 0.5,
+        "aggro_density":   0.9,
         "control_density": 0.2,
         "key_removal_cost": 2,
+        "combat_trick_might": 3,   # damage-based tricks
     },
     "Chaos": {
-        "removal_density": 0.6,    # bounce, kill (Seal of Discord, Rhasa)
+        "removal_density": 0.6,
         "aggro_density":   0.6,
         "control_density": 0.5,
         "key_removal_cost": 2,
+        "combat_trick_might": 3,
     },
     "Body": {
-        "removal_density": 0.3,    # fewer removal spells
-        "aggro_density":   0.7,    # big units, combat-focused
+        "removal_density": 0.3,
+        "aggro_density":   0.7,
         "control_density": 0.4,
         "key_removal_cost": 4,
+        "combat_trick_might": 5,   # Punch First = +5 Might
     },
     "Calm": {
-        "removal_density": 0.4,    # some stuns, bounces
+        "removal_density": 0.4,
         "aggro_density":   0.4,
         "control_density": 0.6,
         "key_removal_cost": 3,
+        "combat_trick_might": 3,   # Defy, Discipline
     },
     "Mind": {
-        "removal_density": 0.7,    # targeted damage, Stupefy, Wages of Pain
+        "removal_density": 0.7,
         "aggro_density":   0.3,
         "control_density": 0.8,
         "key_removal_cost": 2,
+        "combat_trick_might": 2,
     },
 }
 
@@ -64,7 +70,8 @@ def _opponent_threat_profile(opponent):
     d1 = getattr(opponent.rune_pool, 'domain1', None)
     d2 = getattr(opponent.rune_pool, 'domain2', None)
 
-    profile = {"removal_risk": 0.0, "aggro_risk": 0.0, "control_risk": 0.0, "min_removal_cost": 10}
+    profile = {"removal_risk": 0.0, "aggro_risk": 0.0, "control_risk": 0.0,
+               "min_removal_cost": 10, "combat_trick_might": 0}
 
     for domain in [d1, d2]:
         if domain and domain in DOMAIN_THREATS:
@@ -73,6 +80,7 @@ def _opponent_threat_profile(opponent):
             profile["aggro_risk"]   = max(profile["aggro_risk"], t["aggro_density"])
             profile["control_risk"] = max(profile["control_risk"], t["control_density"])
             profile["min_removal_cost"] = min(profile["min_removal_cost"], t["key_removal_cost"])
+            profile["combat_trick_might"] = max(profile["combat_trick_might"], t.get("combat_trick_might", 0))
 
     return profile
 
@@ -134,6 +142,52 @@ def _opponent_can_remove(opponent, cost_threshold=0):
     return opponent.energy >= cost_threshold and opponent.rune_pool.pool >= 1
 
 
+def _opponent_rune_pressure(opponent):
+    """
+    Assess how much rune pressure the opponent is under.
+    Low runes early = they're crippled for tempo.
+    Returns 0.0 (flush with runes) to 1.0 (completely starved).
+    """
+    total_runes = opponent.rune_pool.pool
+    total_channeled = opponent.rune_pool.total_channeled
+    max_possible = 12  # max rune slots
+
+    if total_channeled == 0:
+        return 0.0
+
+    # How much of their channeled runes have they spent?
+    spent = total_channeled - total_runes
+    return min(1.0, spent / max(total_channeled, 1))
+
+
+def _removal_cost_against(card, opponent):
+    """
+    Estimate how many resources the opponent would need to remove this card.
+    Accounts for Deflect (forces extra rune payment per targeting instance).
+    """
+    threat = _opponent_threat_profile(opponent)
+    base_cost = threat["min_removal_cost"]  # energy cost of cheapest removal
+
+    # Deflect: opponent must pay extra runes for each instance that targets this unit
+    deflect_val = card.keyword_value("Deflect", 0)
+    if deflect_val > 0:
+        # Most removal targets once (1 extra rune), but multi-hit spells
+        # like Falling Star hit twice = 2 extra runes.
+        # Average removal costs 1-2 targeting instances
+        base_cost += deflect_val * 1.5  # conservative estimate of extra rune tax
+
+    return base_cost
+
+
+def _has_follow_up(player, max_cost=4):
+    """
+    Check if the player has a strong follow-up play for next turn.
+    If yes, a 'bait' play this turn is less risky because you have a plan B.
+    """
+    follow_ups = [c for c in player.hand if c.cost <= max_cost and c.card_type == "Unit"]
+    return len(follow_ups) >= 1
+
+
 def _is_win_condition(card, hand):
     """
     Determine if a card is a key piece the deck revolves around.
@@ -142,9 +196,6 @@ def _is_win_condition(card, hand):
     if not card.champion:
         return False
 
-    # Champions are always important, but some more than others
-    # Higher cost champions are bigger commitments = more important to protect
-    # If you only have 1 copy in hand, it's especially precious
     copies_in_hand = sum(1 for c in hand if c.name == card.name)
     return copies_in_hand <= 1  # last copy = win condition
 
@@ -169,6 +220,8 @@ def card_play_score(card, player, opponent, battlefields):
     has_protection = _has_protection_in_hand(player)
     has_board_protection = _has_protection_on_board(player, battlefields)
     opp_can_remove = _opponent_can_remove(opponent, threat["min_removal_cost"])
+    opp_rune_pressure = _opponent_rune_pressure(opponent)
+    has_followup = _has_follow_up(player)
 
     score = 0.0
 
@@ -178,26 +231,55 @@ def card_play_score(card, player, opponent, battlefields):
 
         if _is_win_condition(card, player.hand):
             # --- WIN CONDITION LOGIC ---
-            # Don't slam your key champion into open removal
+            # Dynamic decision: play, hold, or BAIT based on full situation
 
-            if opp_can_remove and threat["removal_risk"] > 0.5:
-                # Opponent has resources AND plays a removal-heavy domain
-                if has_protection or has_board_protection:
-                    # We have protection — play it but not as highest priority
-                    # Let protection land first
-                    score += 2
-                elif opponent.energy <= 2:
-                    # Opponent is low on energy — narrow window, risky but worth it
-                    score += 3
+            removal_cost = _removal_cost_against(card, opponent)
+            has_deflect = card.has("Deflect")
+
+            if has_deflect:
+                # --- DEFLECT CHAMPIONS: BAIT POTENTIAL ---
+                # Deflect makes removal expensive. If the opponent tries to
+                # remove this, they burn extra runes per targeting instance.
+                # Playing this "unprotected" can be INTENTIONAL bait.
+
+                if opp_can_remove and removal_cost > opponent.rune_pool.pool * 0.5:
+                    # Removing this would cost the opponent a huge chunk of runes
+                    # It's a GOOD bait — they either leave it alive (we win)
+                    # or they burn runes trying to kill it (we win on tempo)
+                    if has_followup:
+                        score += 7   # strong bait: we have a follow-up play
+                    else:
+                        score += 4   # decent bait but no backup plan
+
+                elif not opp_can_remove:
+                    score += 8   # tapped out = free champion
+
+                elif removal_cost <= 2:
+                    # Cheap removal exists even through Deflect — be careful
+                    if has_protection:
+                        score += 3
+                    else:
+                        score -= 3   # hold it
+
                 else:
-                    # No protection, opponent has removal mana — HOLD IT
-                    score -= 8
+                    score += 5   # Deflect provides natural protection
+
+            elif opp_can_remove and threat["removal_risk"] > 0.5:
+                # --- NON-DEFLECT CHAMPION vs REMOVAL DOMAIN ---
+                if has_protection or has_board_protection:
+                    score += 2   # play it, but let protection land first
+                elif opponent.energy <= 2:
+                    score += 3   # narrow window
+                elif opp_rune_pressure > 0.6:
+                    # Opponent already spent most of their runes this game
+                    # They may not have enough for removal even if they have the card
+                    score += 4
+                else:
+                    score -= 8   # HOLD — too risky
             elif not opp_can_remove:
-                # Opponent is tapped out — safe window, slam it NOW
-                score += 8
+                score += 8       # tapped out = slam it
             else:
-                # Low removal risk domain — safe to play
-                score += 5
+                score += 5       # low removal risk domain
 
         else:
             # --- REGULAR UNIT ---
@@ -441,7 +523,10 @@ class ExpertStrategy:
     # --- Combat ---
 
     def should_attack(self, bf, attacker, defender):
-        """Decide whether to attack — based on might comparison and board context."""
+        """
+        Decide whether to attack — considers might, keywords,
+        champion risk, AND potential combat tricks from untapped runes.
+        """
         atk_units = [u for u in bf.get_units(attacker.name) if not u.is_exhausted]
         def_units = bf.get_units(defender.name)
 
@@ -465,24 +550,45 @@ class ExpertStrategy:
             if u.has("Stun"):
                 def_might -= u.effective_might
 
+        # --- Combat trick awareness ---
+        # If the defender has untapped runes, they might have a combat trick.
+        # Body with 1 rune = Punch First (+5 Might) is a real threat.
+        trick_bonus = 0
+        if defender.rune_pool.pool > 0 and defender.energy > 0:
+            threat = _opponent_threat_profile(defender)
+            trick_bonus = threat.get("combat_trick_might", 0)
+
+        # Factor trick into effective defense — assume they might have it
+        effective_def = def_might + trick_bonus
+
         we_control = bf.controller and bf.controller.name == attacker.name
         they_control = bf.controller and bf.controller.name == defender.name
 
-        # Would we lose a champion in this attack?
-        if atk_might < def_might * 1.3:
-            champs_at_risk = [u for u in atk_units if u.card.champion]
-            if champs_at_risk and not they_control:
-                return False  # don't risk champion in a losing or even trade
+        # Would we lose a champion in this attack (including possible trick)?
+        champs_at_risk = [u for u in atk_units if u.card.champion]
+        if champs_at_risk:
+            # If trick could flip the trade and kill our champion, don't attack
+            if effective_def >= atk_might * 0.8:
+                if not they_control:
+                    return False  # not worth risking champion
 
-        if atk_might >= def_might * 1.3:
-            return True
-        if atk_might >= def_might * 0.9:
+        # Use effective_def (with trick potential) for close calls
+        if atk_might >= effective_def * 1.3:
+            return True   # overwhelming advantage even with trick
+        if atk_might >= def_might * 1.3 and trick_bonus > 0:
+            # We beat their base might but a trick could swing it
+            # Only attack if the payoff is worth the risk
+            if they_control:
+                return True   # must contest even with trick risk
+            return False      # not worth it for a neutral bf
+
+        if atk_might >= effective_def * 0.9:
             if they_control:
                 return True
             if not we_control:
                 return True
             return False
-        if they_control and atk_might >= def_might * 0.7:
+        if they_control and atk_might >= effective_def * 0.7:
             return True
 
         return False
