@@ -8,6 +8,7 @@ import streamlit as st
 import os
 import time as _time
 from collections import Counter
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(
     page_title="Riftbound Sim",
@@ -156,6 +157,33 @@ st.markdown(f"""
 
 
 # ---------------------------------------------------------------------------
+# Auto-refresh when simulation is running
+# ---------------------------------------------------------------------------
+
+def _is_sim_running():
+    """Check if a simulation is actively running."""
+    import json
+    if os.path.exists("results/sim_status.json"):
+        try:
+            with open("results/sim_status.json", "r") as f:
+                status = json.load(f)
+            phase = status.get("phase", "")
+            ts = status.get("timestamp", 0)
+            age = _time.time() - ts
+            # Running if not complete and updated within last 60 seconds
+            return phase != "Complete" and age < 60
+        except Exception:
+            return False
+    return False
+
+IS_LOCAL = os.path.exists("data/cards.json")
+
+if _is_sim_running():
+    # Auto-refresh every 3 seconds while sim is running
+    st_autorefresh(interval=3000, limit=None, key="sim_refresh")
+
+
+# ---------------------------------------------------------------------------
 # Top navigation
 # ---------------------------------------------------------------------------
 
@@ -240,6 +268,13 @@ def sim_status_panel():
     """Render the simulation status panel if a sim is running or just completed."""
     status = load_sim_status()
     if not status:
+        if not IS_LOCAL:
+            st.markdown(f"""
+            <div class="status-panel">
+                <div class="status-phase">&#9679; Cloud Mode</div>
+                <div class="status-detail">Simulations run locally on your machine. Use <code>python run_massive.py</code> to start a run, then view results here.</div>
+            </div>
+            """, unsafe_allow_html=True)
         return
 
     phase = status.get("phase", "Unknown")
@@ -248,8 +283,8 @@ def sim_status_panel():
     ts = status.get("timestamp", 0)
     age = _time.time() - ts
 
-    # If older than 5 minutes and not complete, it's stale
-    if age > 300 and phase != "Complete":
+    # If older than 60 seconds and not complete, it's stale
+    if age > 60 and phase != "Complete":
         return
 
     is_complete = phase == "Complete"
