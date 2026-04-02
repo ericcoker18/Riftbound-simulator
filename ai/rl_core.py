@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 # State encoding (64 features)
 # ---------------------------------------------------------------------------
 
-STATE_DIM = 64
+STATE_DIM = 72   # 64 base + 8 history features
 
 def encode_game_state(player, opponent, battlefields, turn=0) -> torch.Tensor:
     """
@@ -108,6 +108,23 @@ def encode_game_state(player, opponent, battlefields, turn=0) -> torch.Tensor:
     # Overall board presence
     total_fr = sum(len(bf.get_units(player.name)) for bf in battlefields)
     f.append(total_fr / 10.0)
+
+    # --- Game history features (8) ---
+    history = getattr(player, '_game_history', None)
+    if history:
+        opp_domains = set()
+        d1 = getattr(opponent.rune_pool, 'domain1', None)
+        d2 = getattr(opponent.rune_pool, 'domain2', None)
+        if d1: opp_domains.add(d1)
+        if d2: opp_domains.add(d2)
+
+        hist_feats = history.encode_for_rl(
+            player.name, opponent.name,
+            opp_domains, opponent.energy, opponent.rune_pool.pool
+        )
+        f.extend(hist_feats)
+    else:
+        f.extend([0.0] * 8)
 
     # --- Pad to STATE_DIM ---
     while len(f) < STATE_DIM:

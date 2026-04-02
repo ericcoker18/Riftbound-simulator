@@ -223,6 +223,29 @@ def card_play_score(card, player, opponent, battlefields):
     opp_rune_pressure = _opponent_rune_pressure(opponent)
     has_followup = _has_follow_up(player)
 
+    # History-based threat estimation (if game history is available)
+    history = getattr(player, '_game_history', None)
+    opp_domains = set()
+    d1 = getattr(opponent.rune_pool, 'domain1', None)
+    d2 = getattr(opponent.rune_pool, 'domain2', None)
+    if d1: opp_domains.add(d1)
+    if d2: opp_domains.add(d2)
+
+    if history and opp_domains:
+        # Use actual game data: how many removal spells has opponent used?
+        # If they've burned through their copies, it's safer to deploy
+        real_removal_threat = history.removal_threat_level(
+            opponent.name, opp_domains, opponent.energy, opponent.rune_pool.pool
+        )
+        # Blend history-based threat with domain profile (history is more accurate)
+        effective_removal_risk = real_removal_threat * 0.7 + threat["removal_risk"] * 0.3
+
+        # Did opponent pass with mana up recently? They're holding something
+        if history.passed_with_mana_recently(opponent.name):
+            effective_removal_risk = min(1.0, effective_removal_risk + 0.2)
+    else:
+        effective_removal_risk = threat["removal_risk"]
+
     score = 0.0
 
     if card.card_type == "Unit":
@@ -264,7 +287,7 @@ def card_play_score(card, player, opponent, battlefields):
                 else:
                     score += 5   # Deflect provides natural protection
 
-            elif opp_can_remove and threat["removal_risk"] > 0.5:
+            elif opp_can_remove and effective_removal_risk > 0.5:
                 # --- NON-DEFLECT CHAMPION vs REMOVAL DOMAIN ---
                 if has_protection or has_board_protection:
                     score += 2   # play it, but let protection land first

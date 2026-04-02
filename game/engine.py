@@ -3,6 +3,7 @@ import random as _random
 from game.player import Player
 from game.battlefield import Battlefield
 from game.cards import UnitInstance
+from game.history import GameHistory
 
 
 VICTORY_SCORE = 8
@@ -24,7 +25,8 @@ class GameEngine:
         self.victory_score = victory_score
         self.verbose = verbose
         self.turn = 1
-        self.is_first_turn_p2 = True   # tracks P2's bonus channel
+        self.is_first_turn_p2 = True
+        self.history = GameHistory()
 
         bf_names = ["Left", "Right"][:num_battlefields]
         self.battlefields = [
@@ -234,6 +236,11 @@ class GameEngine:
 
     def play_turn(self, active: Player, opponent: Player):
         self.log(f"\n--- Turn {self.turn}: {active.name} (score: {active.score}) ---")
+        self.history.current_turn = self.turn
+
+        # Give both players access to game history for decision making
+        active._game_history = self.history
+        opponent._game_history = self.history
 
         # Beginning Phase
         active.remove_temporary_units(self.battlefields)
@@ -243,9 +250,7 @@ class GameEngine:
         if winner:
             return winner
 
-        # Determine runes to channel:
-        # - Normal: 2 runes
-        # - P2's very first turn: 3 runes (compensation for going second)
+        # Determine runes to channel
         runes = 2
         if self.is_first_turn_p2 and active == self.player2:
             runes = 3
@@ -253,9 +258,14 @@ class GameEngine:
 
         active.start_turn(self.battlefields, runes_to_channel=runes)
 
-        # Main Phase
+        # Main Phase — player records each card played to history
         active.play_cards(self.battlefields, opponent)
         active.advance_units_to_battlefields(self.battlefields)
+
+        # Behavior signal: did the active player end turn with resources up?
+        self.history.record_passed_with_resources(
+            active.name, active.energy, active.rune_pool.pool
+        )
 
         # Combat Phase — attack only when the strategy says it's favorable
         for bf in self.battlefields:

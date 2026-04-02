@@ -23,6 +23,7 @@ class Player:
         self.xp = 0
         self.strategy = strategy      # ExpertStrategy or None (basic AI)
         self._opponent_name = None    # set by engine at game start
+        self._game_history = None     # set by engine each turn
 
     def draw_card(self):
         card = self.deck.draw()
@@ -81,8 +82,16 @@ class Player:
     def can_afford(self, card) -> bool:
         return self.energy >= card.cost and self.rune_pool.can_afford(card.rune_cost)
 
+    def _record_play(self, card):
+        """Log a played card to game history if available."""
+        if self._game_history:
+            self._game_history.record_card_played(self.name, card)
+            if card.rune_cost > 0:
+                self._game_history.record_rune_spend(self.name, card.rune_cost)
+
     def play_unit(self, card, battlefields: list) -> UnitInstance:
         """Pay costs and deploy a unit to the best battlefield."""
+        self._record_play(card)
         self.energy -= card.cost
         self.rune_pool.spend(card.rune_cost)
 
@@ -152,6 +161,7 @@ class Player:
             self.hand = remaining
 
     def _play_spell(self, card, battlefields: list, opponent):
+        self._record_play(card)
         self.energy -= card.cost
         self.rune_pool.spend(card.rune_cost)
         effects = parse_effects(card.ability)
@@ -159,6 +169,7 @@ class Player:
                                 strategy=self.strategy)
 
     def _play_gear(self, card, battlefields: list):
+        self._record_play(card)
         self.energy -= card.cost
         self.rune_pool.spend(card.rune_cost)
         effects = parse_effects(card.ability)
