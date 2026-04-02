@@ -8,7 +8,10 @@ import streamlit as st
 import os
 import time as _time
 from collections import Counter
-from streamlit_autorefresh import st_autorefresh
+try:
+    from streamlit_autorefresh import st_autorefresh
+except ImportError:
+    st_autorefresh = None
 
 st.set_page_config(
     page_title="Riftbound Sim",
@@ -178,8 +181,7 @@ def _is_sim_running():
 
 IS_LOCAL = os.path.exists("data/cards.json")
 
-if _is_sim_running():
-    # Auto-refresh every 3 seconds while sim is running
+if _is_sim_running() and st_autorefresh is not None:
     st_autorefresh(interval=3000, limit=None, key="sim_refresh")
 
 
