@@ -1,17 +1,303 @@
 """
 Expert heuristic AI strategy for Riftbound simulation.
 
-Replaces every in-game decision point with logic that mimics
-how a top-level player would think:
+All decisions are DYNAMIC — based on the specific board state, matchup,
+hand contents, and opponent resources. No hard-coded "always do X" rules.
 
-1. Card selection:  evaluate board state, play for tempo or value
-2. Deployment:      put units where they win fights and score points
-3. Combat:          only attack when the trade is favorable
-4. Spell targeting: remove biggest threats, buff best attackers
-5. Resource mgmt:   hold mana if next turn has a better line
+The AI thinks in terms of:
+  - What does my opponent's domain threaten? (removal, aggro, control)
+  - What's my win condition and is it safe to deploy?
+  - What protection do I have available?
+  - Is the opponent tapped out (low energy/runes) = safe window?
+  - Am I ahead or behind, and what does that change?
 """
 
 import random
+
+
+# ---------------------------------------------------------------------------
+# Domain threat profiles — what each domain is known for
+# ---------------------------------------------------------------------------
+
+DOMAIN_THREATS = {
+    "Order": {
+        "removal_density": 0.8,    # lots of kill spells (Vengeance, Cull the Weak, Imperial Decree)
+        "aggro_density":   0.3,
+        "control_density": 0.7,
+        "key_removal_cost": 3,     # cheapest common removal spell cost
+    },
+    "Fury": {
+        "removal_density": 0.5,    # some damage spells (Falling Star, Cleave)
+        "aggro_density":   0.9,    # very aggressive units
+        "control_density": 0.2,
+        "key_removal_cost": 2,
+    },
+    "Chaos": {
+        "removal_density": 0.6,    # bounce, kill (Seal of Discord, Rhasa)
+        "aggro_density":   0.6,
+        "control_density": 0.5,
+        "key_removal_cost": 2,
+    },
+    "Body": {
+        "removal_density": 0.3,    # fewer removal spells
+        "aggro_density":   0.7,    # big units, combat-focused
+        "control_density": 0.4,
+        "key_removal_cost": 4,
+    },
+    "Calm": {
+        "removal_density": 0.4,    # some stuns, bounces
+        "aggro_density":   0.4,
+        "control_density": 0.6,
+        "key_removal_cost": 3,
+    },
+    "Mind": {
+        "removal_density": 0.7,    # targeted damage, Stupefy, Wages of Pain
+        "aggro_density":   0.3,
+        "control_density": 0.8,
+        "key_removal_cost": 2,
+    },
+}
+
+
+def _opponent_threat_profile(opponent):
+    """Build a threat profile from the opponent's rune pool domains."""
+    d1 = getattr(opponent.rune_pool, 'domain1', None)
+    d2 = getattr(opponent.rune_pool, 'domain2', None)
+
+    profile = {"removal_risk": 0.0, "aggro_risk": 0.0, "control_risk": 0.0, "min_removal_cost": 10}
+
+    for domain in [d1, d2]:
+        if domain and domain in DOMAIN_THREATS:
+            t = DOMAIN_THREATS[domain]
+            profile["removal_risk"] = max(profile["removal_risk"], t["removal_density"])
+            profile["aggro_risk"]   = max(profile["aggro_risk"], t["aggro_density"])
+            profile["control_risk"] = max(profile["control_risk"], t["control_density"])
+            profile["min_removal_cost"] = min(profile["min_removal_cost"], t["key_removal_cost"])
+
+    return profile
+
+
+# ---------------------------------------------------------------------------
+# Situational assessments
+# ---------------------------------------------------------------------------
+
+def _board_state(player, opponent, battlefields):
+    """Assess the current board position."""
+    friendly_might = 0
+    enemy_might = 0
+    friendly_count = 0
+    enemy_count = 0
+
+    for bf in battlefields:
+        f_units = [u for u in bf.get_units(player.name) if u.is_alive]
+        e_units = [u for u in bf.get_units(opponent.name) if u.is_alive]
+        friendly_might += sum(u.effective_might for u in f_units)
+        enemy_might += sum(u.effective_might for u in e_units)
+        friendly_count += len(f_units)
+        enemy_count += len(e_units)
+
+    return {
+        "friendly_might": friendly_might,
+        "enemy_might": enemy_might,
+        "friendly_count": friendly_count,
+        "enemy_count": enemy_count,
+        "behind": enemy_might > friendly_might * 1.2,
+        "ahead": friendly_might > enemy_might * 1.2,
+        "score_lead": player.score - opponent.score,
+    }
+
+
+def _has_protection_in_hand(player):
+    """Check if hand contains protection pieces (gear/spells that protect units)."""
+    protection_keywords = ["guardian angel", "zhonya", "shield", "unyielding", "not so fast",
+                          "riposte", "defy", "wind wall", "counter"]
+    for card in player.hand:
+        ability = card.ability.lower()
+        name = card.name.lower()
+        for kw in protection_keywords:
+            if kw in ability or kw in name:
+                return True
+    return False
+
+
+def _has_protection_on_board(player, battlefields):
+    """Check if we have protective gear/units already in play."""
+    for bf in battlefields:
+        for u in bf.get_units(player.name):
+            if u.is_alive and (u.has("Shield") or u.has("Tank")):
+                return True
+    return False
+
+
+def _opponent_can_remove(opponent, cost_threshold=0):
+    """Check if opponent has enough resources to cast removal."""
+    return opponent.energy >= cost_threshold and opponent.rune_pool.pool >= 1
+
+
+def _is_win_condition(card, hand):
+    """
+    Determine if a card is a key piece the deck revolves around.
+    Win conditions: the card you MUST protect, not throw away carelessly.
+    """
+    if not card.champion:
+        return False
+
+    # Champions are always important, but some more than others
+    # Higher cost champions are bigger commitments = more important to protect
+    # If you only have 1 copy in hand, it's especially precious
+    copies_in_hand = sum(1 for c in hand if c.name == card.name)
+    return copies_in_hand <= 1  # last copy = win condition
+
+
+# ---------------------------------------------------------------------------
+# Dynamic card scoring
+# ---------------------------------------------------------------------------
+
+def card_play_score(card, player, opponent, battlefields):
+    """
+    Score how good it is to play this card RIGHT NOW.
+
+    This is fully dynamic — the same card gets different scores depending on:
+      - Board state (ahead/behind/even)
+      - Opponent's domain (removal risk)
+      - What else is in your hand (protection pieces)
+      - Opponent's resources (tapped out = safe window)
+      - Whether this card is your win condition
+    """
+    board = _board_state(player, opponent, battlefields)
+    threat = _opponent_threat_profile(opponent)
+    has_protection = _has_protection_in_hand(player)
+    has_board_protection = _has_protection_on_board(player, battlefields)
+    opp_can_remove = _opponent_can_remove(opponent, threat["min_removal_cost"])
+
+    score = 0.0
+
+    if card.card_type == "Unit":
+        efficiency = card.health / max(card.cost, 1)
+        score = efficiency * 3
+
+        if _is_win_condition(card, player.hand):
+            # --- WIN CONDITION LOGIC ---
+            # Don't slam your key champion into open removal
+
+            if opp_can_remove and threat["removal_risk"] > 0.5:
+                # Opponent has resources AND plays a removal-heavy domain
+                if has_protection or has_board_protection:
+                    # We have protection — play it but not as highest priority
+                    # Let protection land first
+                    score += 2
+                elif opponent.energy <= 2:
+                    # Opponent is low on energy — narrow window, risky but worth it
+                    score += 3
+                else:
+                    # No protection, opponent has removal mana — HOLD IT
+                    score -= 8
+            elif not opp_can_remove:
+                # Opponent is tapped out — safe window, slam it NOW
+                score += 8
+            else:
+                # Low removal risk domain — safe to play
+                score += 5
+
+        else:
+            # --- REGULAR UNIT ---
+            if board["behind"]:
+                score *= 1.5   # need board presence
+            if card.champion:
+                score += 3     # champions are impactful but not the key piece
+
+            # Prefer playing cheap units first to bait removal before key pieces
+            if card.cost <= 3:
+                score += 1     # cheap units are good removal bait
+
+        # Keyword situational value
+        score += card.keyword_value("Assault") * (2.0 if board["behind"] else 1.0)
+        score += card.keyword_value("Shield") * (2.0 if board["ahead"] else 1.0)
+        if card.has("Tank"):
+            # Tanks are great when you have valuable units to protect
+            has_valuable = any(
+                u.card.champion for bf in battlefields
+                for u in bf.get_units(player.name) if u.is_alive
+            )
+            score += 4 if has_valuable else 1
+        if card.has("Ganking"):
+            score += 2
+
+    elif card.card_type == "Spell":
+        ability = card.ability.lower()
+
+        if "deal" in ability or "kill" in ability or "destroy" in ability:
+            # --- REMOVAL ---
+            # Value depends on whether there's a high-value target to remove
+            best_target_value = 0
+            for bf in battlefields:
+                for u in bf.get_units(opponent.name):
+                    if u.is_alive:
+                        val = u.effective_might
+                        if u.card.champion:
+                            val += 10  # removing their champion is huge
+                        best_target_value = max(best_target_value, val)
+
+            if best_target_value > 0:
+                score = 3 + best_target_value * 0.5
+                if best_target_value >= 8:
+                    score += 3   # high-value removal target = use it now
+            else:
+                score = 0.5   # no targets — hold it for later
+
+        elif "draw" in ability:
+            hand_size = len(player.hand)
+            score = 5 if hand_size <= 2 else 2
+
+        elif "ready" in ability:
+            exhausted = sum(1 for bf in battlefields
+                          for u in bf.get_units(player.name) if u.is_exhausted)
+            score = 2 + exhausted * 2
+
+        elif "counter" in ability or "reaction" in ability:
+            # Hold reactive spells — don't play them proactively
+            score = 0.5
+
+        elif any(kw in ability for kw in ["guardian angel", "zhonya", "shield", "protect"]):
+            # --- PROTECTION ---
+            # Valuable when we have a champion on board to protect
+            champs_on_board = sum(
+                1 for bf in battlefields
+                for u in bf.get_units(player.name)
+                if u.is_alive and u.card.champion
+            )
+            if champs_on_board > 0:
+                score = 7   # protect our champion NOW
+            else:
+                score = 2   # hold for when we deploy the champion
+        else:
+            score = 3
+
+    elif card.card_type == "Gear":
+        # Gear is best when we have units, especially champions
+        champs_on_board = sum(
+            1 for bf in battlefields
+            for u in bf.get_units(player.name)
+            if u.is_alive and u.card.champion
+        )
+        has_units = any(bf.get_units(player.name) for bf in battlefields)
+
+        ability = card.ability.lower()
+        is_protective = any(kw in ability or kw in card.name.lower()
+                          for kw in ["guardian angel", "zhonya", "shield", "armor"])
+
+        if is_protective and champs_on_board > 0:
+            score = 8   # protect the champion!
+        elif is_protective:
+            # Hold protective gear for when champion comes down
+            has_champ_in_hand = any(c.champion for c in player.hand)
+            score = 2 if has_champ_in_hand else 4
+        elif has_units:
+            score = 3
+        else:
+            score = 1
+
+    return score
 
 
 # ---------------------------------------------------------------------------
@@ -19,34 +305,27 @@ import random
 # ---------------------------------------------------------------------------
 
 def battlefield_value(bf, player_name, opponent_name):
-    """
-    Score a battlefield from the player's perspective.
-    Higher = more important to contest.
-    """
+    """Score a battlefield from the player's perspective."""
     friendly = bf.get_units(player_name)
     enemy    = bf.get_units(opponent_name)
 
     f_might = sum(u.effective_might for u in friendly if u.is_alive)
     e_might = sum(u.effective_might for u in enemy if u.is_alive)
 
-    score = bf.point_value * 3     # base value by points
+    score = bf.point_value * 3
 
-    # Battlefields we control are worth defending
     if bf.controller and bf.controller.name == player_name:
-        score += 5    # hold bonus — we score every turn
-    # Battlefields they control are worth contesting
+        score += 5
     elif bf.controller and bf.controller.name == opponent_name:
-        score += 8    # conquer bonus — deny their points and take one
+        score += 8
 
-    # Might advantage: we want to deploy where we can win
     if e_might > 0:
-        score += 3    # contested = important
+        score += 3
         if f_might > e_might:
-            score += 2    # we're winning here — reinforce
+            score += 2
         else:
-            score += 4    # we're losing — need help
+            score += 4
 
-    # Empty uncontrolled = free points if we get there
     if not enemy and bf.controller is None:
         score += 2
 
@@ -54,108 +333,28 @@ def battlefield_value(bf, player_name, opponent_name):
 
 
 def unit_threat(unit):
-    """
-    Rate how threatening an enemy unit is. Higher = should be removed first.
-    Champions and high-might units are top priority.
-    """
+    """Rate how threatening an enemy unit is."""
     score = unit.effective_might * 2
-
     if unit.card.champion:
-        score += 10    # champions are high-value targets
-
+        score += 10
     if unit.has("Assault"):
         score += unit.keyword_value("Assault") * 2
     if unit.has("Tank"):
-        score += 3     # tanks protect other units
+        score += 3
     if unit.has("Ganking"):
-        score += 4     # mobile units are dangerous
-
+        score += 4
     return score
 
 
 def unit_value(unit):
-    """
-    Rate how valuable a friendly unit is. Higher = protect and buff first.
-    """
+    """Rate how valuable a friendly unit is."""
     score = unit.effective_might * 2
-
     if unit.card.champion:
         score += 8
     if unit.has("Assault"):
         score += unit.keyword_value("Assault") * 2
     if not unit.is_exhausted:
-        score += 3     # ready units are more valuable (can attack)
-
-    return score
-
-
-def card_play_score(card, player, opponent, battlefields):
-    """
-    Score a card for how good it is to play RIGHT NOW given the board state.
-    Higher = play this first.
-    """
-    score = 0.0
-
-    # --- Board state assessment ---
-    friendly_total = 0
-    enemy_total = 0
-    for bf in battlefields:
-        friendly_total += sum(u.effective_might for u in bf.get_units(player.name) if u.is_alive)
-        enemy_total    += sum(u.effective_might for u in bf.get_units(opponent.name) if u.is_alive)
-
-    behind = enemy_total > friendly_total * 1.2
-    ahead  = friendly_total > enemy_total * 1.2
-
-    if card.card_type == "Unit":
-        # Units are highest priority when behind (need board presence)
-        efficiency = card.health / max(card.cost, 1)
-        score = efficiency * 3
-
-        if behind:
-            score *= 1.5   # premium on board presence when losing
-        if card.champion:
-            score += 4     # champions are high impact
-
-        # Keyword bonuses
-        score += card.keyword_value("Assault") * 1.5
-        score += card.keyword_value("Shield") * 1.0
-        if card.has("Tank"):
-            score += 2 if behind else 0.5
-        if card.has("Ganking"):
-            score += 2
-
-    elif card.card_type == "Spell":
-        # Removal spells are better when opponent has high-value targets
-        ability = card.ability.lower()
-
-        if "deal" in ability or "kill" in ability or "destroy" in ability:
-            # Removal — valuable when enemy has threats on board
-            if enemy_total > 0:
-                score = 5 + (2 if not behind else 4)
-            else:
-                score = 1    # no targets = low priority
-        elif "draw" in ability:
-            # Card draw — good when hand is small
-            hand_size = len(player.hand)
-            score = 4 if hand_size <= 2 else 2
-        elif "ready" in ability:
-            # Ready effects — good when we have exhausted units
-            exhausted = sum(1 for bf in battlefields
-                          for u in bf.get_units(player.name) if u.is_exhausted)
-            score = 3 + exhausted
-        else:
-            # Other spells
-            score = 3
-
-    elif card.card_type == "Gear":
-        # Gear — good when we have units to equip
-        has_units = any(bf.get_units(player.name) for bf in battlefields)
-        score = 3 if has_units else 1
-
-    # Cost efficiency penalty — very expensive cards are riskier
-    if card.cost >= 7:
-        score -= 1
-
+        score += 3
     return score
 
 
@@ -165,8 +364,9 @@ def card_play_score(card, player, opponent, battlefields):
 
 class ExpertStrategy:
     """
-    Pluggable decision-making for a Player.
-    Each method replaces a decision point in player.py or engine.py.
+    Dynamic decision-making that adapts to every game situation.
+    No hard rules — every decision is a weighted score based on
+    board state, matchup, hand contents, and opponent resources.
     """
 
     # --- Card selection ---
@@ -174,18 +374,12 @@ class ExpertStrategy:
     def choose_cards_to_play(self, player, battlefields, opponent):
         """
         Decide which cards to play and in what order.
-        Returns list of cards to play (in order).
-
-        Key differences from basic AI:
-        - Evaluates board state to prioritize units vs spells
-        - Considers saving resources for next turn
-        - Doesn't blindly play everything
+        Adapts to matchup, board state, and opponent resources.
         """
         affordable = [c for c in player.hand if player.can_afford(c)]
         if not affordable:
             return []
 
-        # Score each card by how good it is to play right now
         scored = [(card_play_score(c, player, opponent, battlefields), c) for c in affordable]
         scored.sort(key=lambda x: x[0], reverse=True)
 
@@ -195,25 +389,22 @@ class ExpertStrategy:
 
         for score, card in scored:
             if sim_energy >= card.cost and sim_runes >= card.rune_cost:
-                # Resource hold-back: if we have a high-value card we can't
-                # afford yet but could next turn, don't spend everything
-                remaining_energy = sim_energy - card.cost
-                remaining_runes  = sim_runes - card.rune_cost
+                # Skip cards with negative or very low scores (AI decided to hold them)
+                if score <= 0:
+                    continue
 
-                # Check if there's a better card in hand we're saving for
+                remaining_energy = sim_energy - card.cost
+
+                # Resource holdback: if we have a high-value card we're saving,
+                # don't spend all resources on low-value plays
                 unplayed_better = [
-                    c for _, c in scored
+                    (s, c) for s, c in scored
                     if c not in to_play and c is not card
                     and c.cost > remaining_energy
-                    and card_play_score(c, player, opponent, battlefields) > score * 1.3
+                    and s > score * 1.3 and s > 0
                 ]
-
-                # If the only unplayed "better" cards cost more than we'd ever
-                # have (cost > 10), don't hold back for them
-                real_holdbacks = [c for c in unplayed_better if c.cost <= player.max_energy + 1]
-
+                real_holdbacks = [(s, c) for s, c in unplayed_better if c.cost <= player.max_energy + 1]
                 if real_holdbacks and score < 4:
-                    # Skip this low-value play to save resources
                     continue
 
                 to_play.append(card)
@@ -225,33 +416,22 @@ class ExpertStrategy:
     # --- Deployment ---
 
     def choose_battlefield(self, player, opponent_name, battlefields):
-        """
-        Pick the best battlefield to deploy a unit to.
-
-        Key differences from basic AI:
-        - Evaluates point value, control state, and might balance
-        - Focuses on battlefields that score points
-        - Avoids over-committing to already-won lanes
-        """
+        """Pick the best battlefield based on scoring, control, and might balance."""
         if not battlefields:
             return None
 
         scored = []
         for bf in battlefields:
             score = battlefield_value(bf, player.name, opponent_name)
-
-            # Diminishing returns: don't stack 5+ units at one bf
             friendly = bf.get_units(player.name)
             if len(friendly) >= 4:
                 score *= 0.5
             elif len(friendly) >= 6:
                 score *= 0.2
-
             scored.append((score, bf))
 
         scored.sort(key=lambda x: x[0], reverse=True)
 
-        # Small randomness to avoid being too predictable
         if len(scored) >= 2 and scored[0][0] - scored[1][0] < 2:
             top = scored[:2]
             return random.choice(top)[1]
@@ -261,36 +441,23 @@ class ExpertStrategy:
     # --- Combat ---
 
     def should_attack(self, bf, attacker, defender):
-        """
-        Decide whether to attack at this battlefield.
-        Returns True if we should initiate combat.
-
-        Key differences from basic AI:
-        - Evaluates whether we win the trade
-        - Considers holding position for next turn's score
-        - Factors in keyword advantages
-        """
+        """Decide whether to attack — based on might comparison and board context."""
         atk_units = [u for u in bf.get_units(attacker.name) if not u.is_exhausted]
         def_units = bf.get_units(defender.name)
 
         if not atk_units:
             return False
-
         if not def_units:
-            # No defenders — free conquer, always attack
             return True
 
-        # Calculate effective combat power
         atk_might = sum(u.effective_might for u in atk_units)
         def_might = sum(u.effective_might for u in def_units)
 
-        # Keyword adjustments
         for u in atk_units:
             atk_might += u.keyword_value("Assault")
         for u in def_units:
             def_might += u.keyword_value("Shield")
 
-        # Stun check: stunned units contribute 0
         for u in atk_units:
             if u.has("Stun"):
                 atk_might -= u.effective_might
@@ -298,42 +465,32 @@ class ExpertStrategy:
             if u.has("Stun"):
                 def_might -= u.effective_might
 
-        # Decision logic:
-        # - If we have clear advantage (>= 1.3x their might), attack
-        # - If it's close but we control the bf, hold (we score passively)
-        # - If they control and we're close, attack (deny their score)
-        # - If we're clearly weaker, don't throw units away
-
         we_control = bf.controller and bf.controller.name == attacker.name
         they_control = bf.controller and bf.controller.name == defender.name
 
-        if atk_might >= def_might * 1.3:
-            return True    # clear advantage
+        # Would we lose a champion in this attack?
+        if atk_might < def_might * 1.3:
+            champs_at_risk = [u for u in atk_units if u.card.champion]
+            if champs_at_risk and not they_control:
+                return False  # don't risk champion in a losing or even trade
 
+        if atk_might >= def_might * 1.3:
+            return True
         if atk_might >= def_might * 0.9:
             if they_control:
-                return True    # close fight but we need to contest
+                return True
             if not we_control:
-                return True    # neutral bf, worth contesting
-            # We control and it's close — hold, score passively
+                return True
             return False
-
         if they_control and atk_might >= def_might * 0.7:
-            return True    # desperate contest — can't let them hold forever
+            return True
 
-        return False    # too weak, don't suicide
+        return False
 
     # --- Spell targeting ---
 
     def pick_damage_target(self, opponent, battlefields, bf_hint=None):
-        """
-        Pick the best enemy unit to deal damage to.
-
-        Key differences from basic AI:
-        - Targets highest-threat unit, not weakest
-        - Prefers units we can actually kill (lethal range)
-        - Champions are priority targets
-        """
+        """Target the highest-threat enemy, preferring killable targets."""
         candidates = []
         if bf_hint:
             candidates = bf_hint.get_units(opponent.name)
@@ -345,26 +502,19 @@ class ExpertStrategy:
         if not alive:
             return None
 
-        # Priority: killable targets first (finish them off)
-        # then highest threat
         def target_priority(u):
             threat = unit_threat(u)
-            # Bonus for targets in lethal range (health <= 3)
             if u.current_health <= 3:
-                threat += 10
+                threat += 10  # killable = bonus
             return threat
 
         return max(alive, key=target_priority)
 
     def pick_buff_target(self, caster, battlefields):
-        """
-        Pick the best friendly unit to buff.
-        Prefers ready units (can attack this turn) and high-value units.
-        """
+        """Buff the unit that benefits most — ready units and champions first."""
         candidates = []
         for bf in battlefields:
             candidates.extend(bf.get_units(caster.name))
-
         alive = [u for u in candidates if u.is_alive]
         if not alive:
             return None
@@ -372,37 +522,28 @@ class ExpertStrategy:
         def buff_priority(u):
             val = unit_value(u)
             if not u.is_exhausted:
-                val += 5    # ready = can use the buff immediately
+                val += 5
             return val
 
         return max(alive, key=buff_priority)
 
     def pick_bounce_target(self, opponent, battlefields):
-        """
-        Pick the best enemy unit to bounce (return to hand).
-        Targets the highest-cost unit (wastes the most of their tempo).
-        """
+        """Bounce the most expensive/threatening enemy unit."""
         candidates = []
         for bf in battlefields:
             candidates.extend(bf.get_units(opponent.name))
-
         alive = [u for u in candidates if u.is_alive]
         if not alive:
             return None
-
-        # Bounce the most expensive unit (maximum tempo loss)
         return max(alive, key=lambda u: u.card.cost + unit_threat(u) * 0.5)
 
     def pick_ready_target(self, caster, battlefields):
-        """Pick the best exhausted friendly unit to ready."""
+        """Ready the highest-might exhausted unit."""
         candidates = []
         for bf in battlefields:
             candidates.extend(bf.get_units(caster.name))
         candidates.extend(caster.base_units)
-
         exhausted = [u for u in candidates if u.is_exhausted and u.is_alive]
         if not exhausted:
             return None
-
-        # Ready the highest-might exhausted unit
         return max(exhausted, key=lambda u: u.effective_might)
