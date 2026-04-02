@@ -69,6 +69,8 @@ def load_card_pool(filepath="data/cards.json"):
             tags=d.get("tags", []),
             keywords=keywords,
             ability=d.get("ability", ""),
+            signature=d.get("signature", False),
+            signature_legend=d.get("signature_legend"),
         )
         card.weight = heuristic_weight(card)
         cards.append(card)

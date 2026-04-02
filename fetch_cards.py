@@ -46,9 +46,11 @@ def map_card(card):
     if card_type not in ("Unit", "Spell", "Gear"):
         return None
 
-    # Skip alternate art, signature, and overnumbered duplicates
-    if meta.get("alternate_art") or meta.get("signature") or meta.get("overnumbered"):
+    # Skip alternate art and overnumbered duplicates (but keep signature cards)
+    if meta.get("alternate_art") or meta.get("overnumbered"):
         return None
+
+    is_signature = bool(meta.get("signature"))
 
     cost   = attrs.get("energy")
     power  = attrs.get("power")
@@ -70,6 +72,32 @@ def map_card(card):
 
     domain = domains[0] if domains else None
 
+    # Signature cards: spells/gear with a legend character name in their tags
+    # (e.g. Spinning Axe has tag "Draven" = Draven's signature gear)
+    # Also includes signature-rarity champion units
+    LEGEND_NAMES = {
+        "Draven", "Irelia", "Lux", "Jinx", "Garen", "Fiora", "Darius", "Ezreal",
+        "Ahri", "Yasuo", "Teemo", "Sett", "Vi", "Jhin", "Poppy", "Annie",
+        "Miss Fortune", "Leona", "Viktor", "Lee Sin", "Master Yi", "Ornn",
+        "Rumble", "Sivir", "Volibear", "Renata Glasc", "Diana", "Lucian",
+        "Rek'Sai", "Kai'Sa", "Pyke", "Vex", "Jax", "Kha'Zix", "Rengar",
+        "Lillia", "Ivern",
+    }
+    signature_legend = None
+    raw_tags = card.get("tags", [])
+    if card_type in ("Spell", "Gear"):
+        for tag in raw_tags:
+            if tag in LEGEND_NAMES:
+                signature_legend = tag
+                is_signature = True
+                break
+    elif is_signature:
+        # Signature-rarity champion units
+        for tag in raw_tags:
+            if tag in LEGEND_NAMES:
+                signature_legend = tag
+                break
+
     return {
         "name":       card["name"],
         "cost":       int(cost),
@@ -84,6 +112,8 @@ def map_card(card):
         "ability":    text.get("plain", ""),
         "rarity":     rarity,
         "champion":   is_champion,
+        "signature":  is_signature,
+        "signature_legend": signature_legend,
     }
 
 

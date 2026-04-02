@@ -17,6 +17,8 @@ class Card:
         tags: list = None,
         keywords: dict = None,
         ability: str = "",
+        signature: bool = False,
+        signature_legend: Optional[str] = None,
     ):
         self.name = name
         self.cost = cost
@@ -30,6 +32,8 @@ class Card:
         self.tags = tags or []
         self.keywords = keywords or {}
         self.ability = ability
+        self.signature = signature                  # True if signature card
+        self.signature_legend = signature_legend    # e.g. "Irelia" — only usable in that legend's deck
 
     @property
     def champion(self) -> bool:
@@ -47,6 +51,7 @@ class Card:
             self.card_type, self.supertype, self.domain,
             self.weight, self.max_copies,
             list(self.tags), dict(self.keywords), self.ability,
+            self.signature, self.signature_legend,
         )
 
     def __repr__(self):

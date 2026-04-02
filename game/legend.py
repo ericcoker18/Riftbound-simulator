@@ -22,14 +22,33 @@ class Legend:
         self.champion_tag = champion_tag     # e.g. "Draven"
 
     def is_legal(self, card) -> bool:
-        """A card is legal if its domain is one of this legend's two domains."""
-        return card.domain in self.domains
+        """
+        A card is legal if:
+          - Its domain is one of this legend's two domains AND
+          - If it's a signature card, it must belong to THIS legend
+        """
+        if not card.domain in self.domains:
+            return False
+        # Signature cards can only go in their legend's deck
+        if getattr(card, 'signature', False):
+            sig_legend = getattr(card, 'signature_legend', None)
+            if sig_legend and sig_legend != self.champion_tag:
+                return False
+        return True
 
     def get_own_champions(self, card_pool) -> list:
-        """Return champion cards that specifically belong to this legend."""
+        """Return champion cards that specifically belong to this legend (including signature)."""
         return [
             c for c in card_pool
             if c.champion and self.champion_tag in c.tags
+        ]
+
+    def get_signature_cards(self, card_pool) -> list:
+        """Return all signature cards for this legend."""
+        return [
+            c for c in card_pool
+            if getattr(c, 'signature', False)
+            and getattr(c, 'signature_legend', None) == self.champion_tag
         ]
 
     def get_champions(self, card_pool) -> list:
