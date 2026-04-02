@@ -85,11 +85,39 @@ class GameEngine:
             base += unit.keyword_value("Shield")
         return max(0, base)
 
-    def _sort_damage_targets(self, units: list) -> list:
-        """Tank first, Backline last. [Rule 741 / card text]"""
+    def _sort_damage_targets(self, units: list, strategy=None) -> list:
+        """
+        Order targets for damage assignment.
+
+        Rules: Tank units MUST be targeted first, Backline MUST be last.
+        Within each tier, the strategy picks the most valuable target to kill.
+        Without a strategy, order within tiers is arbitrary.
+        """
         tank     = [u for u in units if u.has("Tank")]
         normal   = [u for u in units if not u.has("Tank") and not u.has("Backline")]
         backline = [u for u in units if u.has("Backline")]
+
+        if strategy:
+            # Within each tier, prioritize high-value targets:
+            # - Champions first (highest value)
+            # - Then by killability: prefer units we can actually kill
+            #   (waste less overkill damage)
+            # - Then by threat: highest Might units are most dangerous alive
+            def _target_priority(u):
+                score = 0
+                if u.card.champion:
+                    score += 100          # always kill champions if possible
+                score += u.effective_might * 3   # high might = high threat
+                if u.has("Assault"):
+                    score += u.keyword_value("Assault") * 2
+                if u.has("Ganking"):
+                    score += 20           # mobile units are dangerous
+                return score
+
+            tank     = sorted(tank, key=_target_priority, reverse=True)
+            normal   = sorted(normal, key=_target_priority, reverse=True)
+            backline = sorted(backline, key=_target_priority, reverse=True)
+
         return tank + normal + backline
 
     def _assign_damage(self, pool: int, targets: list):
@@ -126,8 +154,13 @@ class GameEngine:
             atk_pool = sum(self._effective_might(u, "attacker") for u in atk_units)
             def_pool = sum(self._effective_might(u, "defender") for u in def_units)
 
-            self._assign_damage(atk_pool, self._sort_damage_targets(def_units))
-            self._assign_damage(def_pool, self._sort_damage_targets(atk_units))
+            # Attacker chooses which defenders to focus (smart targeting)
+            # Defender chooses which attackers to focus (smart targeting)
+            atk_targets = self._sort_damage_targets(def_units, strategy=attacker.strategy)
+            def_targets = self._sort_damage_targets(atk_units, strategy=defender.strategy)
+
+            self._assign_damage(atk_pool, atk_targets)
+            self._assign_damage(def_pool, def_targets)
 
             self.log(f"  {attacker.name} ({atk_pool}) vs {defender.name} ({def_pool}) at {bf.name}")
 
