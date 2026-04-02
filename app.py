@@ -265,14 +265,32 @@ def chart_layout(fig, height=None):
     return fig
 
 def sim_status_panel():
-    """Render the simulation status panel if a sim is running or just completed."""
+    """Render the simulation status panel. Always shows something."""
     status = load_sim_status()
+
     if not status:
-        if not IS_LOCAL:
+        # No status file — show idle state
+        result = load_results()
+        if result:
+            score = result.get("score", 0)
+            legend = result.get("legend", "Unknown")
+            st.markdown(f"""
+            <div class="status-panel status-complete">
+                <div class="status-phase">&#10003; Last Run Complete</div>
+                <div class="status-detail">Best deck: {legend} at {score:.0%} win rate</div>
+                <div class="status-stats">
+                    <span class="status-stat">Run <code>python run_massive.py</code> to start a new simulation</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
             st.markdown(f"""
             <div class="status-panel">
-                <div class="status-phase">&#9679; Cloud Mode</div>
-                <div class="status-detail">Simulations run locally on your machine. Use <code>python run_massive.py</code> to start a run, then view results here.</div>
+                <div class="status-phase">&#9679; Ready</div>
+                <div class="status-detail">No simulation has been run yet</div>
+                <div class="status-stats">
+                    <span class="status-stat">Run <code>python run_massive.py</code> or use the Run Simulation tab to start</span>
+                </div>
             </div>
             """, unsafe_allow_html=True)
         return
@@ -283,28 +301,35 @@ def sim_status_panel():
     ts = status.get("timestamp", 0)
     age = _time.time() - ts
 
-    # If older than 60 seconds and not complete, it's stale
-    if age > 60 and phase != "Complete":
+    is_complete = phase == "Complete"
+
+    # If stale (>60s without update) and not complete, show as stalled
+    if age > 60 and not is_complete:
+        st.markdown(f"""
+        <div class="status-panel">
+            <div class="status-phase">&#9888; Simulation Stalled</div>
+            <div class="status-detail">Last update: {phase} — {detail} ({int(age)}s ago)</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
-    is_complete = phase == "Complete"
     css_class = "status-panel status-complete" if is_complete else "status-panel"
 
     extra_html = ""
-    if status.get("best_score") is not None:
-        stats = []
-        if status.get("best_score"):
-            stats.append(f'<span class="status-stat">Best: <strong>{status["best_score"]:.3f}</strong></span>')
-        if status.get("avg_score"):
-            stats.append(f'<span class="status-stat">Avg: <strong>{status["avg_score"]:.3f}</strong></span>')
-        if status.get("stability") is not None:
-            stats.append(f'<span class="status-stat">Stability: <strong>{status["stability"]:.0%}</strong></span>')
-        if status.get("legend"):
-            stats.append(f'<span class="status-stat">Legend: <strong>{status["legend"][:25]}</strong></span>')
-        if status.get("games_per_sec"):
-            stats.append(f'<span class="status-stat">Speed: <strong>{status["games_per_sec"]:,}/s</strong></span>')
-        if status.get("total_time_min"):
-            stats.append(f'<span class="status-stat">Time: <strong>{status["total_time_min"]} min</strong></span>')
+    stats = []
+    if status.get("best_score"):
+        stats.append(f'<span class="status-stat">Best: <strong>{status["best_score"]:.3f}</strong></span>')
+    if status.get("avg_score"):
+        stats.append(f'<span class="status-stat">Avg: <strong>{status["avg_score"]:.3f}</strong></span>')
+    if status.get("stability") is not None and status.get("stability") > 0:
+        stats.append(f'<span class="status-stat">Stability: <strong>{status["stability"]:.0%}</strong></span>')
+    if status.get("legend"):
+        stats.append(f'<span class="status-stat">Legend: <strong>{status["legend"][:25]}</strong></span>')
+    if status.get("games_per_sec"):
+        stats.append(f'<span class="status-stat">Speed: <strong>{status["games_per_sec"]:,}/s</strong></span>')
+    if status.get("total_time_min"):
+        stats.append(f'<span class="status-stat">Time: <strong>{status["total_time_min"]} min</strong></span>')
+    if stats:
         extra_html = f'<div class="status-stats">{"".join(stats)}</div>'
 
     icon = "&#10003;" if is_complete else "&#9654;"
