@@ -567,7 +567,9 @@ elif page == "Run Simulation":
             coevo = st.slider("Hall of Fame %", 0, 100, 30,
                 help="Percentage of opponents drawn from the Hall of Fame (best decks from past generations). Higher = tougher competition.") / 100
 
-        if st.button("Run Genetic Algorithm", type="primary", use_container_width=True):
+        _, btn_col, _ = st.columns([2, 1, 2])
+        run_ga = btn_col.button("Run GA", type="primary", use_container_width=True)
+        if run_ga:
             with st.spinner("Evolving decks..."):
                 from game.loader import load_card_pool
                 from ai.genetic import run_genetic_algorithm, summarize_deck, genome_legend, genome_cards
@@ -607,7 +609,9 @@ elif page == "Run Simulation":
             rl_lr = st.select_slider("Learning Rate", [1e-4, 3e-4, 1e-3], value=3e-4,
                 help="How fast the network updates its weights. Too high = unstable training, too low = slow learning.")
 
-        if st.button("Train RL Agent", type="primary", use_container_width=True):
+        _, btn_col2, _ = st.columns([2, 1, 2])
+        run_rl = btn_col2.button("Train RL", type="primary", use_container_width=True)
+        if run_rl:
             from game.loader import load_card_pool
             from ai.self_play import SelfPlayTrainer, play_self_play_game, ppo_update, benchmark_vs_expert
             pool = load_card_pool()
@@ -785,10 +789,12 @@ elif page == "How It Works":
 
     st.markdown(f"""
     <div class="card" style="border-left: 4px solid #3daa5c;">
-        <h3>Phase 2 — Genetic Algorithm Evolution (the core)</h3>
-        <p>This is where decks are actually built and tested. Each generation follows this cycle:</p>
+        <h3>Phase 2 — Island Model Evolution</h3>
+        <p>Every legend gets its own isolated population — no legend can go extinct before being fully optimized.
+        This is the "island model" from evolutionary biology: separate breeding pools that evolve independently.</p>
+        <p>Each of the <strong>40 legend islands</strong> runs a mini-evolution:</p>
         <ol>
-            <li><strong>Population</strong> — 100 decks, each with a Legend and 40 domain-legal cards</li>
+            <li><strong>Population</strong> — 20 decks, all using the same legend, with 40 domain-legal cards</li>
             <li><strong>Opponent Pool</strong> — each deck is tested against a mixed field:
                 <ul>
                     <li>30% random legal decks (baseline consistency)</li>
@@ -797,29 +803,42 @@ elif page == "How It Works":
                     <li>20% tournament meta decks (49 real Vegas/Bologna top-32 lists)</li>
                 </ul>
             </li>
-            <li><strong>Fitness</strong> — every deck plays ~300 games. Win rate = fitness score</li>
-            <li><strong>Selection</strong> — top 30 decks survive to breed</li>
-            <li><strong>Crossover</strong> — survivors pair up (same Legend only), split decks at a random point, combine halves</li>
-            <li><strong>Mutation</strong> — each card has an 8% chance of being swapped for another domain-legal card</li>
-            <li><strong>Hall of Fame</strong> — the generation's best deck is archived as a future opponent</li>
-            <li><strong>Convergence Check</strong> — if the top deck is 95%+ identical for 15 straight generations, stop early</li>
+            <li><strong>30 generations</strong> of selection, crossover, and mutation per island</li>
+            <li>The <strong>best deck</strong> from each island becomes that legend's champion</li>
         </ol>
-        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Duration: ~10-30 minutes depending on convergence | Uses all CPU cores in parallel</p>
+        <p>After all 40 islands finish, the champions enter a <strong>round-robin tournament</strong> to determine which legend produces the strongest deck.</p>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Duration: ~5-10 minutes for all 40 islands</p>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="card" style="border-left: 4px solid {ACCENT};">
-        <h3>Phase 3 — Meta Analytics Report</h3>
-        <p>After evolution finishes, the simulator analyzes all generations to produce:</p>
+        <h3>Phase 3 — Top 5 Refinement</h3>
+        <p>The <strong>top 5 legends</strong> from the island tournament get a much deeper evolution run:</p>
         <ul>
-            <li><strong>Legend Dominance</strong> — which Legend won the most generations</li>
-            <li><strong>Champion Zone</strong> — which champion card paired best with each Legend</li>
-            <li><strong>Supporting Champions</strong> — other champion units that appeared in winning decks</li>
-            <li><strong>Card Frequency</strong> — the 40 most common cards across all top decks</li>
-            <li><strong>Domain & Type Mix</strong> — color and card type distribution</li>
+            <li><strong>100 population</strong> (5x larger than the island phase)</li>
+            <li><strong>200 generations</strong> with convergence detection (stops early at 95% stability)</li>
+            <li>Full opponent mix including Hall of Fame, ML, and tournament meta decks</li>
         </ul>
-        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Generated instantly at end of Phase 2</p>
+        <p>This gives the most promising legends enough time to fully optimize their card choices,
+        mana curve, champion pairing, and spell/gear balance.</p>
+        <p>The 5 refined champions then play a <strong>final round-robin tournament</strong> (100 games per matchup) to crown the absolute best deck.</p>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Duration: ~10-30 minutes depending on convergence</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="card" style="border-left: 4px solid {ACCENT};">
+        <h3>Phase 4 — Final Tournament & Analytics</h3>
+        <p>The final tournament produces:</p>
+        <ul>
+            <li><strong>Legend Rankings</strong> — which legend wins the most head-to-head matchups</li>
+            <li><strong>Champion Zone</strong> — which champion card paired best with each legend</li>
+            <li><strong>Supporting Champions</strong> — other champion units that appeared in winning decks</li>
+            <li><strong>Card Frequency</strong> — the most common cards across all top decks</li>
+            <li><strong>The Absolute Best Deck</strong> — legend + 40 cards, saved to results</li>
+        </ul>
+        <p style="color: {TEXT_DIM}; font-size: 0.85rem;">Generated at end of Phase 3</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -872,7 +891,9 @@ elif page == "How It Works":
                 <li><strong>95%+</strong> — the same 38+ cards keep winning (the meta has settled)</li>
             </ul>
             <p>When stability stays above 95% for 15 consecutive generations, the simulation
-            declares <strong>convergence</strong> and stops early — it's found the answer.</p>
+            declares <strong>convergence</strong> and stops early — that legend's best deck has been found.</p>
+        <p>In the island model, convergence happens independently per legend during the refinement phase.
+            A legend that converges quickly frees up time for the others.</p>
         </div>
         """, unsafe_allow_html=True)
 
