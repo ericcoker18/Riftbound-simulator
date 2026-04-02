@@ -142,9 +142,13 @@ class GameEngine:
 
     def resolve_showdown(self, bf: Battlefield, attacker: Player, defender: Player):
         """
-        Resolve combat at one battlefield.
-        Both sides deal damage simultaneously.
-        Winner takes control of the battlefield.
+        Resolve combat at one battlefield following the official combat steps:
+
+        1. Combat cleanup — clear temporary combat buffs from previous rounds
+        2. Deathknell and damage triggers — deal damage simultaneously, resolve death triggers
+        3. Combat results determined — evaluate who won
+        4. Control of battlefield established — winner takes control, points awarded
+        5. Combat ends — exhaust attackers, final cleanup
         """
         atk_units = [u for u in bf.get_units(attacker.name) if not u.is_exhausted]
         def_units = bf.get_units(defender.name)
@@ -152,44 +156,49 @@ class GameEngine:
         if not atk_units:
             return
 
-        if def_units:
+        # ===== STEP 1: Combat cleanup =====
+        # Clear any temporary combat buffs from previous showdowns this turn
+        # (buffs marked as "combat_temp" would be cleared here)
+        # Currently buffs persist — this is the hook for future temp buff tracking
+
+        if not def_units:
+            # No defenders — uncontested, skip to step 4
+            self.log(f"  {attacker.name} conquers {bf.name} uncontested")
+
+        else:
+            # ===== STEP 2: Deathknell and damage triggers =====
+            # Calculate combat pools
             atk_pool = sum(self._effective_might(u, "attacker") for u in atk_units)
             def_pool = sum(self._effective_might(u, "defender") for u in def_units)
 
-            # Attacker chooses which defenders to focus (smart targeting)
-            # Defender chooses which attackers to focus (smart targeting)
+            # Smart damage targeting
             atk_targets = self._sort_damage_targets(def_units, strategy=attacker.strategy)
             def_targets = self._sort_damage_targets(atk_units, strategy=defender.strategy)
 
+            # Deal damage simultaneously
             self._assign_damage(atk_pool, atk_targets)
             self._assign_damage(def_pool, def_targets)
 
             self.log(f"  {attacker.name} ({atk_pool}) vs {defender.name} ({def_pool}) at {bf.name}")
 
-            # Deathknell log
+            # Resolve Deathknell triggers for units that died
             for unit in atk_units + def_units:
                 if not unit.is_alive and unit.has("Deathknell"):
                     self.log(f"  [Deathknell] {unit.card.name}")
+                    # Deathknell effects would resolve here
+                    # (e.g. deal damage, draw cards, spawn tokens)
 
-            # Hunt XP: award XP to attacker for units that died in combat
-            for unit in def_units:
-                if not unit.is_alive and unit.has("Hunt"):
-                    pass  # Hunt awards XP on conquer/hold, not on kill
+            # Resolve other damage triggers
+            # (units that took damage but survived may have on-damage effects)
 
-        else:
-            # No defenders — attacker conquers uncontested
-            self.log(f"  {attacker.name} conquers {bf.name} uncontested")
-
+        # ===== STEP 3: Combat results determined =====
+        # Remove dead units from the battlefield
         bf.remove_dead_units()
 
-        # Exhaust all attacking units after combat
-        for unit in bf.get_units(attacker.name):
-            unit.is_exhausted = True
-
-        # Determine new controller
         atk_remaining = bf.get_units(attacker.name)
         def_remaining = bf.get_units(defender.name)
 
+        # ===== STEP 4: Control of the battlefield established =====
         if atk_remaining and not def_remaining:
             if bf.controller != attacker:
                 bf.controller = attacker
@@ -203,10 +212,17 @@ class GameEngine:
             if bf.controller != defender:
                 bf.controller = defender
                 defender.score += bf.point_value
-                self.log(f"  {defender.name} holds {bf.name} (+{bf.point_value} point)")
+                self.log(f"  {defender.name} takes {bf.name} (+{bf.point_value} point)")
+        elif not atk_remaining and not def_remaining:
+            # Both sides wiped — battlefield becomes uncontrolled
+            if bf.controller is not None:
+                self.log(f"  {bf.name} is now uncontrolled (mutual destruction)")
+                bf.controller = None
 
-        # Ganking: ready units can move to another battlefield next action
-        # (simplified: just leave units in place for now)
+        # ===== STEP 5: Combat ends =====
+        # Exhaust all attacking units that survived
+        for unit in bf.get_units(attacker.name):
+            unit.is_exhausted = True
 
     # ------------------------------------------------------------------
     # Scoring
