@@ -179,6 +179,15 @@ def _removal_cost_against(card, opponent):
     return base_cost
 
 
+def _is_protection_card(card):
+    """Check if a card provides protection for units."""
+    ability = card.ability.lower()
+    name = card.name.lower()
+    protection_keywords = ["guardian angel", "zhonya", "shield", "unyielding",
+                          "not so fast", "riposte", "defy", "wind wall", "counter"]
+    return any(kw in ability or kw in name for kw in protection_keywords)
+
+
 def _has_follow_up(player, max_cost=4):
     """
     Check if the player has a strong follow-up play for next turn.
@@ -472,36 +481,128 @@ class ExpertStrategy:
     Dynamic decision-making that adapts to every game situation.
     No hard rules — every decision is a weighted score based on
     board state, matchup, hand contents, and opponent resources.
+
+    Understands deck archetype:
+      - Aggro: play fast, trade efficiently, push for early points
+      - Control: hold removal, stabilize board, win through value
+      - Combo: find key pieces, protect them, execute game plan
     """
+
+    def identify_deck_plan(self, player, battlefields):
+        """
+        Analyze the player's hand + board to identify the deck's game plan.
+        Returns: "aggro", "control", or "combo"
+        """
+        hand = player.hand
+        if not hand:
+            return "aggro"
+
+        avg_cost = sum(c.cost for c in hand) / max(len(hand), 1)
+        champs_in_hand = sum(1 for c in hand if c.champion)
+        removal_in_hand = sum(1 for c in hand if c.card_type == "Spell"
+                             and any(kw in c.ability.lower() for kw in ["deal", "kill", "destroy"]))
+        protection_in_hand = sum(1 for c in hand if _is_protection_card(c))
+
+        # Combo: has champion + protection pieces
+        if champs_in_hand >= 1 and protection_in_hand >= 1:
+            return "combo"
+
+        # Control: lots of removal, higher average cost
+        if removal_in_hand >= 2 or avg_cost >= 4:
+            return "control"
+
+        # Aggro: cheap cards, few spells
+        return "aggro"
 
     # --- Card selection ---
 
     def choose_cards_to_play(self, player, battlefields, opponent):
         """
         Decide which cards to play and in what order.
+
+        Thinks in SEQUENCES, not individual cards:
+          - Bait unit → removal check → champion (if they used removal)
+          - Protection gear → champion (equip before they can respond)
+          - Draw spell → play what you drew
+          - Bank resources for a power turn next turn
+
         Adapts to matchup, board state, and opponent resources.
         """
         affordable = [c for c in player.hand if player.can_afford(c)]
         if not affordable:
             return []
 
+        # --- Multi-turn planning: should we bank this turn? ---
+        if self._should_bank_turn(player, opponent, battlefields):
+            # Only play free/very cheap cards, save resources for power turn
+            cheap_plays = [c for c in affordable if c.cost <= 1 and
+                          card_play_score(c, player, opponent, battlefields) > 3]
+            return cheap_plays
+
+        # --- Build candidate sequences ---
         scored = [(card_play_score(c, player, opponent, battlefields), c) for c in affordable]
         scored.sort(key=lambda x: x[0], reverse=True)
 
+        # Identify key cards by role
+        bait_units = [(s, c) for s, c in scored if c.card_type == "Unit"
+                     and not _is_win_condition(c, player.hand) and c.cost <= 3 and s > 0]
+        protection = [(s, c) for s, c in scored if _is_protection_card(c)]
+        win_conditions = [(s, c) for s, c in scored if _is_win_condition(c, player.hand)]
+        other = [(s, c) for s, c in scored
+                if (s, c) not in bait_units and (s, c) not in protection and (s, c) not in win_conditions]
+
+        # --- Determine play sequence based on situation ---
+        threat = _opponent_threat_profile(opponent)
+        opp_can_remove = _opponent_can_remove(opponent, threat["min_removal_cost"])
+
         to_play = []
         sim_energy = player.energy
-        sim_runes  = player.rune_pool.pool
+        sim_runes = player.rune_pool.pool
 
-        for score, card in scored:
+        def _try_play(card):
+            nonlocal sim_energy, sim_runes
             if sim_energy >= card.cost and sim_runes >= card.rune_cost:
-                # Skip cards with negative or very low scores (AI decided to hold them)
+                to_play.append(card)
+                sim_energy -= card.cost
+                sim_runes -= card.rune_cost
+                return True
+            return False
+
+        if win_conditions and opp_can_remove and threat["removal_risk"] > 0.5:
+            # SEQUENCE: bait → protection → champion
+            # Play cheap bait units first to draw out removal
+            for s, card in bait_units:
+                if s > 0:
+                    _try_play(card)
+
+            # Then protection if we have it and a champion to protect
+            for s, card in protection:
+                if s > 0:
+                    _try_play(card)
+
+            # Then champion if conditions improved (or Deflect makes it safe)
+            for s, card in win_conditions:
+                # Re-evaluate: opponent may have less mana now after responding to bait
+                new_score = card_play_score(card, player, opponent, battlefields)
+                if new_score > 0:
+                    _try_play(card)
+
+        elif win_conditions and protection:
+            # SEQUENCE: protection → champion (safe to play together)
+            for s, card in protection:
+                if s > 0:
+                    _try_play(card)
+            for s, card in win_conditions:
+                if s > 0:
+                    _try_play(card)
+
+        else:
+            # STANDARD: play by score, skip negative scores
+            for score, card in scored:
                 if score <= 0:
                     continue
-
                 remaining_energy = sim_energy - card.cost
-
-                # Resource holdback: if we have a high-value card we're saving,
-                # don't spend all resources on low-value plays
+                # Resource holdback check
                 unplayed_better = [
                     (s, c) for s, c in scored
                     if c not in to_play and c is not card
@@ -511,12 +612,50 @@ class ExpertStrategy:
                 real_holdbacks = [(s, c) for s, c in unplayed_better if c.cost <= player.max_energy + 1]
                 if real_holdbacks and score < 4:
                     continue
+                _try_play(card)
 
-                to_play.append(card)
-                sim_energy -= card.cost
-                sim_runes  -= card.rune_cost
+        # Fill remaining mana with any other positive-score cards
+        for s, card in other:
+            if card not in to_play and s > 0:
+                _try_play(card)
 
         return to_play
+
+    def _should_bank_turn(self, player, opponent, battlefields):
+        """
+        Should we skip playing cards this turn to save for a power turn?
+
+        Bank if:
+        - We have a high-cost champion + protection we can't both play now
+        - We'll be able to play them together next turn
+        - We're not too far behind on board
+        """
+        board = _board_state(player, opponent, battlefields)
+
+        # Don't bank if we're behind — need board presence now
+        if board["behind"]:
+            return False
+
+        # Don't bank if we're about to lose
+        if opponent.score >= 6:
+            return False
+
+        # Check if we have a champion + protection combo we can't afford this turn
+        champ_in_hand = [c for c in player.hand if _is_win_condition(c, player.hand)]
+        prot_in_hand = [c for c in player.hand if _is_protection_card(c)]
+
+        if champ_in_hand and prot_in_hand:
+            champ = champ_in_hand[0]
+            prot = prot_in_hand[0]
+            combo_cost = champ.cost + prot.cost
+            combo_runes = champ.rune_cost + prot.rune_cost
+
+            # Can't afford both now but can next turn
+            if combo_cost > player.energy and combo_cost <= player.max_energy + 1:
+                if combo_runes <= player.rune_pool.pool + 2:  # will channel 2 more
+                    return True
+
+        return False
 
     # --- Deployment ---
 
@@ -574,10 +713,25 @@ class ExpertStrategy:
                 def_might -= u.effective_might
 
         # --- Combat trick awareness ---
-        # If the defender has untapped runes, they might have a combat trick.
-        # Body with 1 rune = Punch First (+5 Might) is a real threat.
+        # Use opponent hand model if game history available
         trick_bonus = 0
-        if defender.rune_pool.pool > 0 and defender.energy > 0:
+        history = getattr(attacker, '_game_history', None)
+        if history and defender.rune_pool.pool > 0 and defender.energy > 0:
+            d1 = getattr(defender.rune_pool, 'domain1', None)
+            d2 = getattr(defender.rune_pool, 'domain2', None)
+            def_domains = {d for d in [d1, d2] if d}
+            hand_info = history.infer_opponent_hand(
+                defender.name, def_domains,
+                defender.energy, defender.rune_pool.pool,
+                len(defender.hand)
+            )
+            if hand_info["likely_has_trick"] > 0.3:
+                threat = _opponent_threat_profile(defender)
+                trick_bonus = threat.get("combat_trick_might", 0)
+            # If opponent is sandbagging for a big turn, be extra cautious
+            if hand_info["likely_holding_for_big_turn"]:
+                trick_bonus = max(trick_bonus, 3)
+        elif defender.rune_pool.pool > 0 and defender.energy > 0:
             threat = _opponent_threat_profile(defender)
             trick_bonus = threat.get("combat_trick_might", 0)
 
@@ -586,6 +740,10 @@ class ExpertStrategy:
 
         we_control = bf.controller and bf.controller.name == attacker.name
         they_control = bf.controller and bf.controller.name == defender.name
+
+        # Deck plan affects aggression threshold
+        plan = self.identify_deck_plan(attacker, [bf])
+        aggression_mod = {"aggro": 0.15, "control": -0.1, "combo": 0.0}.get(plan, 0.0)
 
         # Would we lose a champion in this attack (including possible trick)?
         champs_at_risk = [u for u in atk_units if u.card.champion]
@@ -596,22 +754,22 @@ class ExpertStrategy:
                     return False  # not worth risking champion
 
         # Use effective_def (with trick potential) for close calls
-        if atk_might >= effective_def * 1.3:
+        if atk_might >= effective_def * (1.3 - aggression_mod):
             return True   # overwhelming advantage even with trick
-        if atk_might >= def_might * 1.3 and trick_bonus > 0:
+        if atk_might >= def_might * (1.3 - aggression_mod) and trick_bonus > 0:
             # We beat their base might but a trick could swing it
             # Only attack if the payoff is worth the risk
             if they_control:
                 return True   # must contest even with trick risk
             return False      # not worth it for a neutral bf
 
-        if atk_might >= effective_def * 0.9:
+        if atk_might >= effective_def * (0.9 - aggression_mod):
             if they_control:
                 return True
             if not we_control:
                 return True
             return False
-        if they_control and atk_might >= effective_def * 0.7:
+        if they_control and atk_might >= effective_def * (0.7 - aggression_mod):
             return True
 
         return False

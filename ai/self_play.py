@@ -126,8 +126,12 @@ def play_self_play_game(net, card_pool, deck_size=40, temperature=1.0):
     """
     Play one game: RL agent (as P1) vs RL agent (as P2).
     Both use the same network but collect separate trajectories.
-    Returns (p1_traj, p2_traj, winner).
+
+    Uses turn-level reward shaping: each turn's reward reflects
+    how much the position improved, not just win/loss at the end.
     """
+    from ai.rewards import evaluate_position, compute_turn_reward
+
     g1 = random_genome(card_pool, deck_size)
     g2 = random_genome(card_pool, deck_size)
     d1 = genome_to_deck(g1, card_pool)
@@ -141,18 +145,49 @@ def play_self_play_game(net, card_pool, deck_size=40, temperature=1.0):
 
     engine = GameEngine(p1, p2)
 
-    # Patch engine to update strategy context each turn
+    # Track position before/after each turn for reward shaping
+    prev_pos = {p1.name: 0.0, p2.name: 0.0}
+    turn_step_indices = {p1.name: 0, p2.name: 0}
+
     original_play_turn = engine.play_turn
 
     def patched_play_turn(active, opponent):
         if active.strategy and isinstance(active.strategy, RLStrategy):
             active.strategy.set_game_context(opponent, engine.battlefields, engine.turn)
-        return original_play_turn(active, opponent)
+
+        # Snapshot position before the turn
+        pos_before = evaluate_position(active, opponent, engine.battlefields)
+
+        # Play the turn
+        result = original_play_turn(active, opponent)
+
+        # Evaluate position after the turn
+        game_over = result is not None
+        won = result == active if game_over else False
+        pos_after = evaluate_position(active, opponent, engine.battlefields)
+
+        # Compute turn reward and assign to all steps from this turn
+        turn_reward = compute_turn_reward(
+            prev_pos[active.name], pos_after,
+            game_over=game_over, won=won
+        )
+
+        # Assign turn reward to steps taken during this turn
+        strat = active.strategy
+        if isinstance(strat, RLStrategy):
+            current_steps = len(strat.trajectory.steps)
+            for i in range(turn_step_indices[active.name], current_steps):
+                strat.trajectory.steps[i].reward = turn_reward
+            turn_step_indices[active.name] = current_steps
+
+        prev_pos[active.name] = pos_after
+        return result
 
     engine.play_turn = patched_play_turn
 
     result = engine.play_game()
 
+    # Final outcome bonus (on top of turn rewards)
     strat1.assign_outcome(result == 1)
     strat2.assign_outcome(result == 2)
 

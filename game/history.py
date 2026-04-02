@@ -241,6 +241,69 @@ class GameHistory:
         total_remaining = sum(t["likely_remaining"] for t in castable_tricks)
         return min(1.0, total_remaining / 5.0)
 
+    # --- Opponent hand modeling ---
+
+    def infer_opponent_hand(self, player_name: str, domains: set,
+                            energy: int, runes: int, hand_size: int) -> dict:
+        """
+        Infer what the opponent is likely holding based on:
+          - What they HAVEN'T played (they drew cards but didn't use them)
+          - What they passed with resources to cast
+          - What removal/tricks they haven't used yet from their domain pool
+          - Their hand size (more cards = more options)
+
+        Returns: {
+            "likely_has_removal": float (0-1),
+            "likely_has_trick": float (0-1),
+            "likely_has_champion": float (0-1),
+            "likely_holding_for_big_turn": bool,
+            "estimated_threat_cards": int,
+        }
+        """
+        inference = {
+            "likely_has_removal": 0.0,
+            "likely_has_trick": 0.0,
+            "likely_has_champion": 0.0,
+            "likely_holding_for_big_turn": False,
+            "estimated_threat_cards": 0,
+        }
+
+        if hand_size == 0:
+            return inference
+
+        # Removal likelihood: based on remaining copies in domain pool
+        removal_threat = self.removal_threat_level(player_name, domains, energy, runes)
+        # Scale by hand size — more cards = higher chance they have it
+        hand_factor = min(1.0, hand_size / 4.0)
+        inference["likely_has_removal"] = removal_threat * hand_factor
+
+        # Trick likelihood
+        trick_threat = self.combat_trick_threat(player_name, domains, energy, runes)
+        inference["likely_has_trick"] = trick_threat * hand_factor
+
+        # Champion likelihood: if they've played few champions relative to hand
+        champs_played = sum(1 for c in self.cards_played[player_name] if c.champion)
+        if champs_played < 2 and hand_size >= 3:
+            inference["likely_has_champion"] = 0.5 * hand_factor
+
+        # Holding for big turn: passed with lots of resources multiple turns
+        recent_passes = [
+            s for s in self.behavior_signals[player_name]
+            if s["type"] == "passed_with_mana"
+            and self.current_turn - s["turn"] <= 3
+        ]
+        if len(recent_passes) >= 2:
+            # Passed with mana 2+ times recently = sandbagging
+            inference["likely_holding_for_big_turn"] = True
+            inference["estimated_threat_cards"] = min(hand_size, 3)
+        elif recent_passes:
+            avg_held_energy = sum(s["energy"] for s in recent_passes) / len(recent_passes)
+            if avg_held_energy >= 3:
+                inference["likely_holding_for_big_turn"] = True
+                inference["estimated_threat_cards"] = min(hand_size, 2)
+
+        return inference
+
     # --- State encoding for RL ---
 
     def encode_for_rl(self, player_name: str, opponent_name: str,
