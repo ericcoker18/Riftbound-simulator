@@ -93,6 +93,24 @@ def evaluate_position(player, opponent, battlefields):
         score += min(spells_played, 5) * 0.3
         score += min(gear_played, 3) * 0.4
 
+        # --- Signature card usage reward ---
+        # Playing your legend's signature spells/gear is high value
+        sig_played = sum(1 for c in history.cards_played.get(player.name, [])
+                        if getattr(c, 'signature', False))
+        score += sig_played * 0.5
+
+        # --- Card impact reward ---
+        # Cards that killed units/champions or provided protection are valuable
+        card_perf = history.get_card_performance(player.name)
+        total_positive = sum(p.get("positive", 0) for p in card_perf.values())
+        score += min(total_positive, 5) * 0.3
+
+        # --- Legend ability synergy reward ---
+        # Extra reward for casting signature spells (legend synergy)
+        for c in history.cards_played.get(player.name, []):
+            if c.card_type == "Spell" and getattr(c, 'signature', False):
+                score += 0.5
+
     return score
 
 

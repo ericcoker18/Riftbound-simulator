@@ -168,6 +168,44 @@ def apply_reputation_weights(card_pool, history):
             card.weight *= rep_weights[card.name]
 
 
+def get_optimal_copies(history, legend_name: str) -> dict:
+    """
+    Based on past winning decks, determine optimal copy counts for cards.
+    Cards that consistently appear at 3 copies in winners should be at 3.
+    Cards that never show up should be at 0.
+
+    Returns: {card_name: recommended_copies}
+    """
+    top_decks = history.get("top_decks", [])
+    card_copy_counts = {}  # card_name -> list of copy counts across decks
+
+    for deck in top_decks:
+        if deck.get("legend") != legend_name:
+            continue
+
+        counts = {}
+        for card_name in deck.get("cards", []):
+            counts[card_name] = counts.get(card_name, 0) + 1
+
+        for card_name, count in counts.items():
+            if card_name not in card_copy_counts:
+                card_copy_counts[card_name] = []
+            card_copy_counts[card_name].append(count)
+
+    # Average copy count across winning decks
+    recommendations = {}
+    for card_name, copy_list in card_copy_counts.items():
+        avg = sum(copy_list) / len(copy_list)
+        if avg >= 2.5:
+            recommendations[card_name] = 3
+        elif avg >= 1.5:
+            recommendations[card_name] = 2
+        elif avg >= 0.5:
+            recommendations[card_name] = 1
+
+    return recommendations
+
+
 # ---------------------------------------------------------------------------
 # 3. Legend performance history
 # ---------------------------------------------------------------------------

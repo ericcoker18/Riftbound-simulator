@@ -152,9 +152,11 @@ class EffectResolver:
         strategy: ExpertStrategy for smart targeting, or None for basic.
         """
         self._strategy = strategy
+        self._caster = caster  # for impact tracking
         for effect in effects:
             self._resolve(effect, caster, opponent, battlefields, bf)
         self._strategy = None
+        self._caster = None
 
     def resolve_gear(self, effects: list, owner, battlefields: list,
                      strategy=None):
@@ -192,9 +194,14 @@ class EffectResolver:
                 target.current_health = 0
 
     def _resolve_damage(self, effect, caster, opponent, battlefields, bf):
+        history = getattr(caster, '_game_history', None)
         if effect.target == "all_enemy_units":
             for unit in self._all_units(opponent, battlefields):
+                was_alive = unit.is_alive
                 unit.current_health -= effect.amount
+                if was_alive and not unit.is_alive and history:
+                    impact = "killed_champion" if unit.card.champion else "killed_unit"
+                    history.record_card_impact(caster.name, "last_spell", impact)
         elif effect.target == "all_friendly_units":
             for unit in self._all_units(caster, battlefields):
                 unit.current_health -= effect.amount
@@ -202,10 +209,13 @@ class EffectResolver:
             for unit in self._all_units(caster, battlefields) + self._all_units(opponent, battlefields):
                 unit.current_health -= effect.amount
         else:
-            # Single enemy unit — pick weakest (easiest to finish off)
             target = self._pick_enemy_unit(opponent, battlefields, bf)
             if target:
+                was_alive = target.is_alive
                 target.current_health -= effect.amount
+                if was_alive and not target.is_alive and history:
+                    impact = "killed_champion" if target.card.champion else "killed_unit"
+                    history.record_card_impact(caster.name, "last_spell", impact)
 
     def _resolve_ready(self, effect, caster, battlefields):
         if effect.target == "all_friendly_units":

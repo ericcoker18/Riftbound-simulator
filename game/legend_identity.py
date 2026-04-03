@@ -267,6 +267,15 @@ def apply_legend_weights(card, legend_name: str) -> float:
     profile = get_legend_profile(legend_name)
     multiplier = 1.0
 
+    # Signature cards are inherently strong in their legend's deck
+    # They were designed specifically for this legend — always include them
+    if getattr(card, 'signature', False):
+        sig_legend = getattr(card, 'signature_legend', None)
+        legend_short = legend_name.split(" - ")[0].strip()
+        if sig_legend == legend_short:
+            multiplier *= 5.0  # very high priority — almost guaranteed inclusion
+            return multiplier
+
     # Card type preference
     if card.card_type == "Spell":
         multiplier *= profile["spell_weight"]

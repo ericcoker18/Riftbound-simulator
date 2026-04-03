@@ -241,6 +241,45 @@ class GameHistory:
         total_remaining = sum(t["likely_remaining"] for t in castable_tricks)
         return min(1.0, total_remaining / 5.0)
 
+    # --- Card performance tracking ---
+
+    def record_card_impact(self, player_name: str, card_name: str, impact: str):
+        """
+        Track when a card makes a meaningful impact during a game.
+        impact types: "killed_unit", "killed_champion", "protected", "drew_cards",
+                      "buffed", "removed_threat", "scored_point", "wasted"
+        """
+        if "card_impacts" not in self.__dict__:
+            self.card_impacts = {}
+        key = (player_name, card_name)
+        if key not in self.card_impacts:
+            self.card_impacts[key] = {"positive": 0, "negative": 0, "plays": 0}
+
+        self.card_impacts[key]["plays"] += 1
+        if impact in ("killed_unit", "killed_champion", "protected", "drew_cards",
+                      "buffed", "removed_threat", "scored_point"):
+            self.card_impacts[key]["positive"] += 1
+        elif impact == "wasted":
+            self.card_impacts[key]["negative"] += 1
+
+    def get_card_performance(self, player_name: str) -> dict:
+        """
+        Get performance stats for all cards played by a player.
+        Returns: {card_name: {"plays": N, "positive": N, "negative": N, "score": float}}
+        """
+        if "card_impacts" not in self.__dict__:
+            return {}
+
+        results = {}
+        for (pname, card_name), data in self.card_impacts.items():
+            if pname != player_name:
+                continue
+            plays = data["plays"]
+            score = (data["positive"] - data["negative"]) / max(plays, 1)
+            results[card_name] = {**data, "score": score}
+
+        return results
+
     # --- Opponent hand modeling ---
 
     def infer_opponent_hand(self, player_name: str, domains: set,

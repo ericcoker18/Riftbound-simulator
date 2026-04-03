@@ -88,6 +88,8 @@ class Player:
             self._game_history.record_card_played(self.name, card)
             if card.rune_cost > 0:
                 self._game_history.record_rune_spend(self.name, card.rune_cost)
+            # Track that this card was played (for performance measurement)
+            self._game_history.record_card_impact(self.name, card.name, "played")
 
     def play_unit(self, card, battlefields: list) -> UnitInstance:
         """Pay costs and deploy a unit to the best battlefield."""
