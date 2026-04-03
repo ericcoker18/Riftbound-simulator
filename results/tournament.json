@@ -1,236 +1,236 @@
 [
   {
-    "legend": "Poppy - Keeper of the Hammer",
-    "win_rate": 0.8621052631578947,
-    "wins": 1638,
-    "losses": 262
+    "legend": "Jhin - Virtuoso",
+    "win_rate": 0.7794736842105263,
+    "wins": 1481,
+    "losses": 419
   },
   {
     "legend": "LeBlanc - Deceiver",
-    "win_rate": 0.81,
-    "wins": 1539,
-    "losses": 361
+    "win_rate": 0.7710526315789473,
+    "wins": 1465,
+    "losses": 435
+  },
+  {
+    "legend": "Poppy - Keeper of the Hammer",
+    "win_rate": 0.761578947368421,
+    "wins": 1447,
+    "losses": 453
   },
   {
     "legend": "Ivern - Green Father",
-    "win_rate": 0.8010526315789473,
-    "wins": 1522,
-    "losses": 378
-  },
-  {
-    "legend": "Vi - Piltover Enforcer",
-    "win_rate": 0.7773684210526316,
-    "wins": 1477,
-    "losses": 423
-  },
-  {
-    "legend": "Jhin - Virtuoso",
-    "win_rate": 0.7757894736842105,
-    "wins": 1474,
-    "losses": 426
-  },
-  {
-    "legend": "Sett - The Boss",
-    "win_rate": 0.7557894736842106,
-    "wins": 1436,
-    "losses": 464
+    "win_rate": 0.7347368421052631,
+    "wins": 1396,
+    "losses": 504
   },
   {
     "legend": "Kha'Zix - Voidreaver",
-    "win_rate": 0.7478947368421053,
-    "wins": 1421,
-    "losses": 479
+    "win_rate": 0.7342105263157894,
+    "wins": 1395,
+    "losses": 505
   },
   {
-    "legend": "Miss Fortune - Bounty Hunter",
-    "win_rate": 0.6815789473684211,
-    "wins": 1295,
-    "losses": 605
+    "legend": "Vex - Gloomist",
+    "win_rate": 0.7010526315789474,
+    "wins": 1332,
+    "losses": 568
   },
   {
-    "legend": "Leona - Radiant Dawn",
-    "win_rate": 0.61,
-    "wins": 1159,
-    "losses": 741
+    "legend": "Sett - The Boss",
+    "win_rate": 0.6926315789473684,
+    "wins": 1316,
+    "losses": 584
   },
   {
-    "legend": "Rengar - Pridestalker",
-    "win_rate": 0.6089473684210527,
-    "wins": 1157,
-    "losses": 743
+    "legend": "Vi - Piltover Enforcer",
+    "win_rate": 0.6878947368421052,
+    "wins": 1307,
+    "losses": 593
+  },
+  {
+    "legend": "Teemo - Swift Scout",
+    "win_rate": 0.6857894736842105,
+    "wins": 1303,
+    "losses": 597
   },
   {
     "legend": "Viktor - Herald of the Arcane",
-    "win_rate": 0.5994736842105263,
-    "wins": 1139,
-    "losses": 761
+    "win_rate": 0.6447368421052632,
+    "wins": 1225,
+    "losses": 675
   },
   {
-    "legend": "Darius - Hand of Noxus",
-    "win_rate": 0.5826315789473684,
-    "wins": 1107,
-    "losses": 793
+    "legend": "Miss Fortune - Bounty Hunter",
+    "win_rate": 0.6342105263157894,
+    "wins": 1205,
+    "losses": 695
   },
   {
-    "legend": "Lucian - Purifier",
-    "win_rate": 0.5810526315789474,
-    "wins": 1104,
-    "losses": 796
+    "legend": "Yasuo - Unforgiven",
+    "win_rate": 0.6247368421052631,
+    "wins": 1187,
+    "losses": 713
+  },
+  {
+    "legend": "Leona - Radiant Dawn",
+    "win_rate": 0.6157894736842106,
+    "wins": 1170,
+    "losses": 730
+  },
+  {
+    "legend": "Ahri - Nine-Tailed Fox",
+    "win_rate": 0.5773684210526315,
+    "wins": 1097,
+    "losses": 803
   },
   {
     "legend": "Lee Sin - Blind Monk",
+    "win_rate": 0.5721052631578948,
+    "wins": 1087,
+    "losses": 813
+  },
+  {
+    "legend": "Jinx - Loose Cannon",
     "win_rate": 0.5689473684210526,
     "wins": 1081,
     "losses": 819
   },
   {
-    "legend": "Jinx - Loose Cannon",
-    "win_rate": 0.5589473684210526,
-    "wins": 1062,
-    "losses": 838
-  },
-  {
-    "legend": "Vex - Gloomist",
-    "win_rate": 0.5557894736842105,
-    "wins": 1056,
-    "losses": 844
-  },
-  {
-    "legend": "Volibear - Relentless Storm",
-    "win_rate": 0.5468421052631579,
-    "wins": 1039,
-    "losses": 861
-  },
-  {
     "legend": "Kai'Sa - Daughter of the Void",
-    "win_rate": 0.5405263157894736,
-    "wins": 1027,
-    "losses": 873
+    "win_rate": 0.5610526315789474,
+    "wins": 1066,
+    "losses": 834
   },
   {
-    "legend": "Teemo - Swift Scout",
-    "win_rate": 0.51,
-    "wins": 969,
-    "losses": 931
+    "legend": "Darius - Hand of Noxus",
+    "win_rate": 0.5326315789473685,
+    "wins": 1012,
+    "losses": 888
   },
   {
-    "legend": "Rumble - Mechanized Menace",
-    "win_rate": 0.5026315789473684,
-    "wins": 955,
-    "losses": 945
+    "legend": "Diana - Scorn of the Moon",
+    "win_rate": 0.5105263157894737,
+    "wins": 970,
+    "losses": 930
+  },
+  {
+    "legend": "Rengar - Pridestalker",
+    "win_rate": 0.5057894736842106,
+    "wins": 961,
+    "losses": 939
+  },
+  {
+    "legend": "Pyke - Bloodharbor Ripper",
+    "win_rate": 0.4868421052631579,
+    "wins": 925,
+    "losses": 975
   },
   {
     "legend": "Master Yi - Wuju Master",
-    "win_rate": 0.48736842105263156,
-    "wins": 926,
-    "losses": 974
+    "win_rate": 0.4710526315789474,
+    "wins": 895,
+    "losses": 1005
   },
   {
-    "legend": "Rek'sai - Void Burrower",
-    "win_rate": 0.4731578947368421,
-    "wins": 899,
-    "losses": 1001
-  },
-  {
-    "legend": "Ahri - Nine-Tailed Fox",
+    "legend": "Lillia - Bashful Bloom",
     "win_rate": 0.46473684210526317,
     "wins": 883,
     "losses": 1017
   },
   {
+    "legend": "Volibear - Relentless Storm",
+    "win_rate": 0.45473684210526316,
+    "wins": 864,
+    "losses": 1036
+  },
+  {
     "legend": "Sivir - Battle Mistress",
-    "win_rate": 0.45842105263157895,
-    "wins": 871,
-    "losses": 1029
+    "win_rate": 0.43157894736842106,
+    "wins": 820,
+    "losses": 1080
   },
   {
-    "legend": "Yasuo - Unforgiven",
-    "win_rate": 0.43473684210526314,
-    "wins": 826,
-    "losses": 1074
+    "legend": "Rumble - Mechanized Menace",
+    "win_rate": 0.41,
+    "wins": 779,
+    "losses": 1121
   },
   {
-    "legend": "Garen - Might of Demacia",
-    "win_rate": 0.43,
-    "wins": 817,
-    "losses": 1083
-  },
-  {
-    "legend": "Pyke - Bloodharbor Ripper",
-    "win_rate": 0.42894736842105263,
-    "wins": 815,
-    "losses": 1085
-  },
-  {
-    "legend": "Diana - Scorn of the Moon",
-    "win_rate": 0.3910526315789474,
-    "wins": 743,
-    "losses": 1157
-  },
-  {
-    "legend": "Annie - Dark Child",
-    "win_rate": 0.39052631578947367,
-    "wins": 742,
-    "losses": 1158
-  },
-  {
-    "legend": "Jax - Grandmaster At Arms",
-    "win_rate": 0.35368421052631577,
-    "wins": 672,
-    "losses": 1228
-  },
-  {
-    "legend": "Lux - Lady of Luminosity",
-    "win_rate": 0.3463157894736842,
-    "wins": 658,
-    "losses": 1242
-  },
-  {
-    "legend": "Lillia - Bashful Bloom",
-    "win_rate": 0.33631578947368423,
-    "wins": 639,
-    "losses": 1261
-  },
-  {
-    "legend": "Draven - Glorious Executioner",
-    "win_rate": 0.2968421052631579,
-    "wins": 564,
-    "losses": 1336
-  },
-  {
-    "legend": "Azir - Emperor of the Sands",
-    "win_rate": 0.2910526315789474,
-    "wins": 553,
-    "losses": 1347
-  },
-  {
-    "legend": "Fiora - Grand Duelist",
-    "win_rate": 0.28,
-    "wins": 532,
-    "losses": 1368
+    "legend": "Rek'sai - Void Burrower",
+    "win_rate": 0.38894736842105265,
+    "wins": 739,
+    "losses": 1161
   },
   {
     "legend": "Ornn - Fire Below the Mountain",
-    "win_rate": 0.2294736842105263,
-    "wins": 436,
-    "losses": 1464
+    "win_rate": 0.3831578947368421,
+    "wins": 728,
+    "losses": 1172
   },
   {
-    "legend": "Renata Glasc - Chem-Baroness",
-    "win_rate": 0.17684210526315788,
-    "wins": 336,
-    "losses": 1564
+    "legend": "Lucian - Purifier",
+    "win_rate": 0.35526315789473684,
+    "wins": 675,
+    "losses": 1225
+  },
+  {
+    "legend": "Jax - Grandmaster At Arms",
+    "win_rate": 0.3542105263157895,
+    "wins": 673,
+    "losses": 1227
+  },
+  {
+    "legend": "Annie - Dark Child",
+    "win_rate": 0.3257894736842105,
+    "wins": 619,
+    "losses": 1281
+  },
+  {
+    "legend": "Garen - Might of Demacia",
+    "win_rate": 0.32263157894736844,
+    "wins": 613,
+    "losses": 1287
+  },
+  {
+    "legend": "Lux - Lady of Luminosity",
+    "win_rate": 0.3178947368421053,
+    "wins": 604,
+    "losses": 1296
+  },
+  {
+    "legend": "Azir - Emperor of the Sands",
+    "win_rate": 0.2963157894736842,
+    "wins": 563,
+    "losses": 1337
+  },
+  {
+    "legend": "Draven - Glorious Executioner",
+    "win_rate": 0.2631578947368421,
+    "wins": 500,
+    "losses": 1400
+  },
+  {
+    "legend": "Fiora - Grand Duelist",
+    "win_rate": 0.24736842105263157,
+    "wins": 470,
+    "losses": 1430
   },
   {
     "legend": "Ezreal - Prodigal Explorer",
-    "win_rate": 0.14842105263157895,
-    "wins": 282,
-    "losses": 1618
+    "win_rate": 0.23473684210526316,
+    "wins": 446,
+    "losses": 1454
   },
   {
     "legend": "Irelia - Blade Dancer",
-    "win_rate": 0.10473684210526316,
-    "wins": 199,
-    "losses": 1701
+    "win_rate": 0.22,
+    "wins": 418,
+    "losses": 1482
+  },
+  {
+    "legend": "Renata Glasc - Chem-Baroness",
+    "win_rate": 0.17526315789473684,
+    "wins": 333,
+    "losses": 1567
   }
 ]

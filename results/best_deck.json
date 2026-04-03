@@ -1,114 +1,142 @@
 {
-  "legend": "Poppy - Keeper of the Hammer",
-  "score": 0.97,
+  "legend": "Jhin - Virtuoso",
+  "score": 0.89,
   "deck": [
     [
-      "Shen - Kinkou",
+      "Sprite Queen",
+      1
+    ],
+    [
+      "Vayne - Hunter (Signature)",
+      1
+    ],
+    [
+      "Cleave",
       2
     ],
     [
-      "Trusty Ramhound",
+      "Rumble - Hotheaded",
+      1
+    ],
+    [
+      "Undying Legion",
+      1
+    ],
+    [
+      "Inviolus Vox",
+      1
+    ],
+    [
+      "Consult the Past",
+      1
+    ],
+    [
+      "Noxus Hopeful",
+      1
+    ],
+    [
+      "Jayce - Man of Progress",
+      1
+    ],
+    [
+      "Lucian - Gunslinger",
       2
     ],
     [
-      "Veteran Poro",
-      3
-    ],
-    [
-      "Unsung Hero",
-      1
-    ],
-    [
-      "Daring Poro",
-      1
-    ],
-    [
-      "Enthralling Protector",
-      1
-    ],
-    [
-      "Nidalee - Cat Form",
-      1
-    ],
-    [
-      "Glasc Mixologist",
-      1
-    ],
-    [
-      "Nilah - Joyful Ascetic",
+      "Bubble Bot",
       2
     ],
     [
-      "Lee Sin - Centered",
+      "Pit Crew",
       2
     ],
     [
-      "Demacian Diplomat",
+      "Battering Ram",
       1
     ],
     [
-      "Sea Monkey",
+      "Blazing Scorcher",
       2
     ],
     [
-      "Kraken Hunter",
-      3
-    ],
-    [
-      "Determined Sentry",
-      3
-    ],
-    [
-      "Hunter's Machete",
+      "Breakneck Mech",
       1
     ],
     [
-      "Confront",
-      1
-    ],
-    [
-      "Gemhand Hunter",
-      1
-    ],
-    [
-      "Galio - Indefatigable",
+      "Rell - Magnetic",
       2
     ],
     [
-      "Cruel Patron",
+      "Malzahar - Fanatic",
       1
     ],
     [
-      "Vanguard Captain",
+      "Blue Sentinel",
       1
     ],
     [
-      "Zaun Punk",
+      "Smoke Screen",
       1
     ],
     [
-      "Spectral Matron",
+      "Grim Apothecary",
       1
     ],
     [
-      "Ruin Runner",
+      "Tryndamere - Barbarian",
       1
     ],
     [
-      "Trifarian Gloryseeker",
+      "Blind Fury",
       1
     ],
     [
-      "Xin Zhao - Vigilant",
+      "Void Drone",
       1
     ],
     [
-      "Pakaa Cub",
+      "Kai'Sa - Survivor",
       1
     ],
     [
-      "Miss Fortune - Captain",
-      2
+      "Dropboarder",
+      1
+    ],
+    [
+      "Brazen Buccaneer",
+      1
+    ],
+    [
+      "Xerath - Freed",
+      1
+    ],
+    [
+      "Rocket Barrage",
+      1
+    ],
+    [
+      "Gearhead",
+      1
+    ],
+    [
+      "Riptide Rex",
+      1
+    ],
+    [
+      "Dramatic Visionary",
+      1
+    ],
+    [
+      "Temporal Portal",
+      1
+    ],
+    [
+      "Mega-Mech",
+      1
+    ],
+    [
+      "Bard - Mercurial",
+      1
     ]
   ]
 }
