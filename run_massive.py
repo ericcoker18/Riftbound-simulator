@@ -97,6 +97,9 @@ CONFIG = {
     "convergence_window": 15,
     "convergence_threshold": 0.95,  # 95% card overlap = converged
 
+    # Performance: cap workers to prevent CPU overheating
+    "max_workers":       16,        # limit parallel processes (24 cores = too hot)
+
     # Island model
     "island_pop":            20,    # population per legend island
     "island_gens":           30,    # generations per island
@@ -635,6 +638,7 @@ def main():
         tournament_games=cfg["tournament_games"],
         on_island_complete=on_island_done,
         history=history,
+        num_workers=cfg.get("max_workers"),
         verbose=True,
     )
 
@@ -678,6 +682,7 @@ def main():
             hall_of_fame_size=cfg["hall_of_fame_size"],
             coevo_ratio=cfg["coevo_ratio"],
             tournament_games=cfg["tournament_games"],
+            num_workers=min(3, cfg.get("max_workers", 16)),
             verbose=True,
         )
 
