@@ -1,4 +1,5 @@
 import random
+import multiprocessing
 from collections import Counter
 
 from game.deck import Deck
@@ -8,6 +9,38 @@ from game.legend import Legend, load_legends
 from game.strategy import ExpertStrategy
 
 _expert = ExpertStrategy()
+
+
+# ---------------------------------------------------------------------------
+# Parallel island worker
+# ---------------------------------------------------------------------------
+
+def _island_worker(args):
+    """Worker function for parallel island evolution."""
+    (legend_name, card_pool, deck_size, island_pop, island_gens, island_top_n,
+     mutation_rate, opponent_pool_size, games_per_opponent,
+     hall_of_fame_size, coevo_ratio) = args
+
+    try:
+        legend_obj = get_legend(legend_name)
+        legal_count = len([c for c in card_pool if legend_obj.is_legal(c)])
+        if legal_count < deck_size:
+            return None
+
+        best_genome, best_score = evolve_island(
+            legend=legend_obj, card_pool=card_pool,
+            deck_size=deck_size, population_size=island_pop,
+            generations=island_gens, top_n=island_top_n,
+            mutation_rate=mutation_rate,
+            opponent_pool_size=opponent_pool_size,
+            games_per_opponent=games_per_opponent,
+            hall_of_fame_size=hall_of_fame_size,
+            coevo_ratio=coevo_ratio,
+            verbose=False,
+        )
+        return (legend_name, best_genome, best_score)
+    except Exception as e:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -485,55 +518,57 @@ def evolve_islands(
     tournament_games=50,
     on_island_complete=None,
     history=None,
+    num_workers=None,
     verbose=True,
 ):
     """
-    Island model: run a separate evolution per legend, then tournament.
+    Island model: run ALL legends in parallel, then tournament.
 
     1. Each legend gets its own population and evolves independently
+       across all available CPU cores simultaneously
     2. The best deck from each island enters a round-robin tournament
     3. The overall winner is the best deck across all legends
-
-    on_island_complete: optional callback(legend_name, best_genome, best_score, idx, total)
-                        called after each island finishes (for progress tracking)
 
     Returns (overall_best_genome, tournament_results).
     """
     if legends is None:
         legends = all_legends()
 
+    num_workers = num_workers or multiprocessing.cpu_count()
+
     if verbose:
         print(f"\n  Island Model: {len(legends)} legends x {island_gens} gens x {island_pop} pop")
+        print(f"  Parallel workers: {num_workers}")
 
+    # Build worker args for each legend
+    worker_args = []
+    for legend in legends:
+        legend_obj = legend if isinstance(legend, Legend) else get_legend(legend)
+        worker_args.append((
+            legend_obj.name, card_pool, deck_size, island_pop, island_gens,
+            island_top_n, mutation_rate, opponent_pool_size, games_per_opponent,
+            hall_of_fame_size, coevo_ratio,
+        ))
+
+    # Run all islands in parallel
+    if verbose:
+        print(f"  Launching {len(worker_args)} islands in parallel...")
+
+    with multiprocessing.Pool(processes=min(num_workers, len(worker_args))) as pool:
+        results_raw = pool.map(_island_worker, worker_args)
+
+    # Collect results
     champions = []
     champion_details = []
 
-    for i, legend in enumerate(legends):
-        legend_obj = legend if isinstance(legend, Legend) else get_legend(legend)
-        legend_name = legend_obj.name
-
-        # Check there are enough legal cards for this legend
-        legal_count = len([c for c in card_pool if legend_obj.is_legal(c)])
-        if legal_count < deck_size:
+    for i, result in enumerate(results_raw):
+        if result is None:
             if verbose:
-                print(f"  [{i+1}/{len(legends)}] {legend_name}: skipped (only {legal_count} legal cards)")
+                legend_name = worker_args[i][0]
+                print(f"  {legend_name}: skipped or failed")
             continue
 
-        if verbose:
-            print(f"  [{i+1}/{len(legends)}] {legend_name}...", end=" ", flush=True)
-
-        best_genome, best_score = evolve_island(
-            legend=legend_obj, card_pool=card_pool,
-            deck_size=deck_size, population_size=island_pop,
-            generations=island_gens, top_n=island_top_n,
-            mutation_rate=mutation_rate,
-            opponent_pool_size=opponent_pool_size,
-            games_per_opponent=games_per_opponent,
-            hall_of_fame_size=hall_of_fame_size,
-            coevo_ratio=coevo_ratio, ml_policy=ml_policy,
-            ml_ratio=ml_ratio, history=history, verbose=False,
-        )
-
+        legend_name, best_genome, best_score = result
         champions.append(best_genome)
         champion_details.append({
             "legend": legend_name,
@@ -542,7 +577,7 @@ def evolve_islands(
         })
 
         if verbose:
-            print(f"score: {best_score:.3f}")
+            print(f"  {legend_name:<35} score: {best_score:.3f}")
 
         if on_island_complete:
             on_island_complete(legend_name, best_genome, best_score, i, len(legends))

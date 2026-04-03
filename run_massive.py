@@ -638,51 +638,43 @@ def main():
         verbose=True,
     )
 
-    # Phase 3: Refine the top legends with a larger run
+    # Phase 3: Refine the top legends in parallel
     if tournament_results:
         top_legends = [genome_legend(g) for g, wr, _, _ in tournament_results[:3]]
         print(f"\n{'='*50}")
-        print(f"  Phase 3: Refining Top 3 Legends")
+        print(f"  Phase 3: Refining Top 3 Legends (parallel)")
         print(f"{'='*50}")
 
-        write_status("Phase 3: Refinement", f"Deep evolution for top 5 legends...")
+        write_status("Phase 3: Refinement", f"Deep evolution for top 3 legends in parallel...")
 
-        refined_champions = []
-        for i, legend_name in enumerate(top_legends):
-            print(f"  [{i+1}/3] {legend_name}...", end=" ", flush=True)
-            write_status(
-                "Phase 3: Refinement",
-                f"Refining {legend_name} ({i+1}/3)",
-                progress=(i + 1) / 3,
-                extra={"legend": legend_name},
-            )
+        # Run all 3 refinements simultaneously
+        top_legend_objs = [get_legend(ln) for ln in top_legends]
 
-            best, score = evolve_islands(
-                card_pool=card_pool,
-                legends=[get_legend(legend_name)],
-                deck_size=cfg["deck_size"],
-                island_pop=cfg["population_size"],
-                island_gens=cfg["max_generations"],
-                island_top_n=cfg["top_n"],
-                mutation_rate=cfg["mutation_rate"],
-                opponent_pool_size=cfg["opponent_pool_size"],
-                games_per_opponent=cfg["games_per_opponent"],
-                hall_of_fame_size=cfg["hall_of_fame_size"],
-                coevo_ratio=cfg["coevo_ratio"],
-                ml_policy=ml_policy,
-                ml_ratio=cfg["ml_ratio"],
-                tournament_games=cfg["tournament_games"],
-                verbose=False,
-            )
-            if best:
-                refined_champions.append(best)
-                print(f"done")
-            else:
-                # Fallback to island champion
-                orig = next((g for g, _, _, _ in tournament_results if genome_legend(g) == legend_name), None)
-                if orig:
-                    refined_champions.append(orig)
-                print(f"fallback")
+        _, refined_results = evolve_islands(
+            card_pool=card_pool,
+            legends=top_legend_objs,
+            deck_size=cfg["deck_size"],
+            island_pop=cfg["population_size"],
+            island_gens=cfg["max_generations"],
+            island_top_n=cfg["top_n"],
+            mutation_rate=cfg["mutation_rate"],
+            opponent_pool_size=cfg["opponent_pool_size"],
+            games_per_opponent=cfg["games_per_opponent"],
+            hall_of_fame_size=cfg["hall_of_fame_size"],
+            coevo_ratio=cfg["coevo_ratio"],
+            tournament_games=cfg["tournament_games"],
+            verbose=True,
+        )
+
+        refined_champions = [g for g, _, _, _ in refined_results] if refined_results else []
+
+        # Fallback: use island champions for any that failed
+        if len(refined_champions) < len(top_legends):
+            for legend_name in top_legends:
+                if not any(genome_legend(g) == legend_name for g in refined_champions):
+                    orig = next((g for g, _, _, _ in tournament_results if genome_legend(g) == legend_name), None)
+                    if orig:
+                        refined_champions.append(orig)
 
         # Final tournament among refined champions
         if len(refined_champions) >= 2:
@@ -690,7 +682,7 @@ def main():
             print(f"  Final Tournament: Top 3 Refined Champions")
             print(f"{'='*50}")
 
-            write_status("Final Tournament", "Top 5 refined champions battling...")
+            write_status("Final Tournament", "Top 3 refined champions battling...")
 
             from ai.genetic import island_tournament
             final_results = island_tournament(refined_champions, card_pool,
