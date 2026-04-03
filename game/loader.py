@@ -19,9 +19,8 @@ def heuristic_weight(card: Card) -> float:
     """
     Estimate card value for weighted deck building.
 
-    Units: efficiency = might / total_cost + keyword bonuses
-    Spells: flat value based on cost (cheap spells slightly preferred)
-    Gear: flat value, slightly below average spells
+    Weights are balanced so spells and gear compete fairly with units.
+    A good spell should be weighted similarly to a good unit.
     """
     total_cost = card.cost + (card.rune_cost * 2)
 
@@ -35,15 +34,47 @@ def heuristic_weight(card: Card) -> float:
         kw_bonus += 0.5 if card.has("Tank") else 0
         kw_bonus += 0.3 if card.has("Ganking") else 0
         kw_bonus += card.keyword_value("Hunt") * 0.2
+        kw_bonus += 0.4 if card.has("Deflect") else 0
 
         return max(0.1, efficiency + kw_bonus)
 
     elif card.card_type == "Spell":
-        # Spells have no Might — weight by rough value: cheap = more playable
-        return max(0.1, 2.0 / max(total_cost, 1))
+        # Spells are valuable — removal, draw, protection, combat tricks
+        # Base weight comparable to decent units
+        ability = card.ability.lower()
+        base = 1.5
+
+        # Removal spells are premium
+        if any(kw in ability for kw in ["deal", "kill", "destroy", "damage"]):
+            base = 2.5
+        # Draw spells are great
+        elif "draw" in ability:
+            base = 2.0
+        # Protection is valuable
+        elif any(kw in ability for kw in ["counter", "shield", "ready", "guardian"]):
+            base = 2.0
+        # Combat tricks
+        elif any(kw in ability for kw in ["might", "buff", "punch"]):
+            base = 1.8
+
+        # Cheap spells are more flexible
+        cost_factor = max(0.5, 3.0 / max(total_cost, 1))
+        return max(0.1, base * min(cost_factor, 2.0))
 
     elif card.card_type == "Gear":
-        return max(0.1, 1.5 / max(total_cost, 1))
+        # Gear provides persistent value — should be weighted well
+        ability = card.ability.lower()
+        base = 1.5
+
+        # Equipment (attaches to units) is premium
+        if "equip" in ability:
+            base = 2.5
+        # Protective gear
+        elif any(kw in ability for kw in ["guardian", "zhonya", "shield"]):
+            base = 2.5
+
+        cost_factor = max(0.5, 3.0 / max(total_cost, 1))
+        return max(0.1, base * min(cost_factor, 2.0))
 
     return 0.1
 

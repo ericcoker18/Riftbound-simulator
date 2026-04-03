@@ -81,6 +81,18 @@ def evaluate_position(player, opponent, battlefields):
     score += energy_diff * 0.1
     score += rune_diff * 0.2
 
+    # --- Spell/gear usage reward ---
+    # Encourage the AI to actually use spells and gear, not just units
+    history = getattr(player, '_game_history', None)
+    if history:
+        spells_played = sum(1 for c in history.cards_played.get(player.name, [])
+                           if c.card_type == "Spell")
+        gear_played = sum(1 for c in history.cards_played.get(player.name, [])
+                         if c.card_type == "Gear")
+        # Bonus for spell/gear usage (diminishing returns)
+        score += min(spells_played, 5) * 0.3
+        score += min(gear_played, 3) * 0.4
+
     return score
 
 

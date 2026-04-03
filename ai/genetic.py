@@ -64,7 +64,10 @@ def random_genome(card_pool, deck_size=40, legend=None):
     Build a random domain-legal deck for a given legend.
     If no legend specified, picks one at random.
     Guarantees at least 1 champion matching the legend.
+    Uses legend identity to weight cards toward the legend's game plan.
     """
+    from game.legend_identity import apply_legend_weights, enforce_deck_composition
+
     legends, by_name = _load_legends()
 
     if legend is None:
@@ -87,14 +90,18 @@ def random_genome(card_pool, deck_size=40, legend=None):
             genome.append(champ.name)
             counts[champ.name] += 1
 
-    # Fill the rest from all domain-legal cards (units, spells, gear, AND other champions)
+    # Fill the rest — weights adjusted by legend identity
     while len(genome) < deck_size:
         available = [c for c in all_legal if counts[c.name] < c.max_copies]
         if not available:
             break
-        card = random.choices(available, weights=[c.weight for c in available], k=1)[0]
+        weights = [c.weight * apply_legend_weights(c, legend.name) for c in available]
+        card = random.choices(available, weights=weights, k=1)[0]
         genome.append(card.name)
         counts[card.name] += 1
+
+    # Enforce minimum spell/gear counts for the legend's archetype
+    genome = enforce_deck_composition(genome, legend.name, card_pool)
 
     return (legend.name, genome)
 
@@ -227,7 +234,9 @@ def crossover(parent1, parent2, card_pool):
 # ---------------------------------------------------------------------------
 
 def mutate(genome, card_pool, rate=0.1):
-    """Randomly replace cards with legal alternatives."""
+    """Randomly replace cards with legal alternatives, weighted by legend identity."""
+    from game.legend_identity import apply_legend_weights, enforce_deck_composition
+
     legend_name = genome_legend(genome)
     legend = get_legend(legend_name)
     cards = genome_cards(genome)
@@ -242,7 +251,8 @@ def mutate(genome, card_pool, rate=0.1):
             counts[name] -= 1
             available = [c for c in legal if counts[c.name] < c.max_copies]
             if available:
-                pick = random.choices(available, weights=[c.weight for c in available], k=1)[0]
+                weights = [c.weight * apply_legend_weights(c, legend_name) for c in available]
+                pick = random.choices(available, weights=weights, k=1)[0]
                 result.append(pick.name)
                 counts[pick.name] += 1
             else:
@@ -250,6 +260,9 @@ def mutate(genome, card_pool, rate=0.1):
                 counts[name] += 1
         else:
             result.append(name)
+
+    # Enforce composition after mutation
+    result = enforce_deck_composition(result, legend_name, card_pool)
 
     return (legend_name, result)
 
