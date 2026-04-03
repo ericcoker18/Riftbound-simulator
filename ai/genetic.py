@@ -16,7 +16,7 @@ _expert = ExpertStrategy()
 # ---------------------------------------------------------------------------
 
 def _island_worker(args):
-    """Worker function for parallel island evolution."""
+    """Worker function for parallel island evolution. Returns champion + full population scores."""
     (legend_name, card_pool, deck_size, island_pop, island_gens, island_top_n,
      mutation_rate, opponent_pool_size, games_per_opponent,
      hall_of_fame_size, coevo_ratio) = args
@@ -39,7 +39,7 @@ def _island_worker(args):
             verbose=False,
         )
         return (legend_name, best_genome, best_score)
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -557,7 +557,10 @@ def evolve_islands(
     with multiprocessing.Pool(processes=min(num_workers, len(worker_args))) as pool:
         results_raw = pool.map(_island_worker, worker_args)
 
-    # Collect results
+    # Collect results and feed into card evaluator
+    from ai.card_evaluator import CardEvaluator
+    evaluator = CardEvaluator(card_pool)
+
     champions = []
     champion_details = []
 
@@ -576,11 +579,19 @@ def evolve_islands(
             "island_score": best_score,
         })
 
+        # Record winning deck into card evaluator
+        evaluator.record_deck_result(legend_name, genome_cards(best_genome), won=True, score=best_score)
+
         if verbose:
             print(f"  {legend_name:<35} score: {best_score:.3f}")
 
         if on_island_complete:
             on_island_complete(legend_name, best_genome, best_score, i, len(legends))
+
+    # Print card performance insights
+    if verbose and evaluator.total_decks_evaluated >= 5:
+        evaluator.print_top_cards(15)
+        evaluator.print_format_staples(3)
 
     if not champions:
         return None, []

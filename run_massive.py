@@ -638,6 +638,21 @@ def main():
         verbose=True,
     )
 
+    # Apply card performance weights from Phase 2 before refinement
+    if tournament_results:
+        from ai.card_evaluator import CardEvaluator
+        evaluator = CardEvaluator(card_pool)
+        for genome, wr, _, _ in tournament_results:
+            evaluator.record_deck_result(
+                genome_legend(genome), genome_cards(genome),
+                won=(wr > 0.5), score=wr
+            )
+        # Boost weights of cards that performed well across islands
+        evaluator.apply_weights(card_pool)
+        if True:  # verbose
+            evaluator.print_top_cards(10)
+            evaluator.print_format_staples(3)
+
     # Phase 3: Refine the top legends in parallel
     if tournament_results:
         top_legends = [genome_legend(g) for g, wr, _, _ in tournament_results[:3]]
